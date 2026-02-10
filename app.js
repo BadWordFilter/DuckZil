@@ -69,11 +69,8 @@ function updateHeaderForUser() {
   const themeBtn = `<button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" aria-label="테마 변경">🌙</button>`;
   const communityBtnLabel = activeTab === 'community' ? '🛍️ 마켓으로' : '💬 커뮤니티';
   const communityBtnAction = activeTab === 'community' ? `switchTab('home')` : `switchTab('community')`;
-  const communityBtnStyle = activeTab === 'community'
-    ? `background: var(--primary); border-color: var(--primary); color: white;`
-    : `background: rgba(99, 102, 241, 0.1); border-color: var(--primary); color: var(--primary-light);`;
 
-  const communityBtn = `<button class="btn btn-secondary" onclick="${communityBtnAction}" id="headerCommunityBtn" style="${communityBtnStyle}">${communityBtnLabel}</button>`;
+  const communityBtn = `<button class="btn btn-secondary" onclick="${communityBtnAction}" id="headerCommunityBtn">${communityBtnLabel}</button>`;
 
   if (currentUser) {
     const avatarText = currentUser.photoURL
@@ -950,8 +947,6 @@ function switchTab(tab) {
     if (headerCommunityBtn) {
       headerCommunityBtn.innerHTML = '🛍️ 마켓으로';
       headerCommunityBtn.setAttribute('onclick', "switchTab('home')");
-      headerCommunityBtn.style.background = 'var(--primary)';
-      headerCommunityBtn.style.color = 'white';
     }
     navItems.forEach(nav => nav.classList.remove('active'));
     renderCommunity();
@@ -964,8 +959,6 @@ function switchTab(tab) {
     if (headerCommunityBtn) {
       headerCommunityBtn.innerHTML = '💬 커뮤니티';
       headerCommunityBtn.setAttribute('onclick', "switchTab('community')");
-      headerCommunityBtn.style.background = 'rgba(99, 102, 241, 0.1)';
-      headerCommunityBtn.style.color = 'var(--primary-light)';
     }
 
     // '전체' 탭 활성화 (홈으로 돌아올 때)
