@@ -459,7 +459,16 @@ function showProductDetail(productId) {
   document.getElementById('modalCondition').textContent = product.conditionName;
   document.getElementById('modalLocation').textContent = product.location || '서울';
   document.getElementById('modalDescription').textContent = product.description;
-  document.getElementById('modalSeller').textContent = product.seller || '판매자';
+
+  // 판매자 정보 업데이트
+  const sellerNameEl = document.getElementById('modalSeller');
+  const sellerAvatarEl = document.getElementById('modalSellerAvatar');
+
+  if (sellerNameEl) sellerNameEl.textContent = product.seller || '판매자';
+  if (sellerAvatarEl) {
+    const avatarChar = (product.seller || '판매자').charAt(0);
+    sellerAvatarEl.textContent = avatarChar;
+  }
 
   const modalActions = document.querySelector('#productModal .modal-actions');
 
