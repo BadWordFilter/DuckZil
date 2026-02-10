@@ -500,15 +500,50 @@ function showProductDetail(productId) {
 }
 
 function performSearch() {
+  applyFilters();
+}
+
+function applyFilters() {
   const query = document.getElementById('searchInput').value.toLowerCase();
-  if (!query) { currentProducts = [...products]; } else {
-    currentProducts = products.filter(product =>
+  const category = document.getElementById('categoryFilter').value;
+  const priceRange = document.getElementById('priceFilter').value;
+  const condition = document.getElementById('conditionFilter').value;
+  const regionInput = document.getElementById('regionFilter').value;
+
+  currentProducts = products.filter(product => {
+    // 🔍 검색어 필터
+    const matchesSearch = !query ||
       product.title.toLowerCase().includes(query) ||
       product.description.toLowerCase().includes(query) ||
-      product.categoryName.includes(query)
-    );
-  }
+      (product.categoryName && product.categoryName.toLowerCase().includes(query));
+
+    // 📁 카테고리 필터
+    const matchesCategory = category === 'all' || product.category === category;
+
+    // 💰 가격 필터
+    let matchesPrice = true;
+    if (priceRange !== 'all') {
+      const parts = priceRange.split('-');
+      const min = Number(parts[0]);
+      const max = Number(parts[1]);
+      matchesPrice = product.price >= min && product.price <= max;
+    }
+
+    // ✨ 상태 필터
+    const matchesCondition = condition === 'all' || product.condition === condition;
+
+    // 📍 지역 필터
+    const matchesRegion = regionInput === 'all' || product.region === regionInput;
+
+    return matchesSearch && matchesCategory && matchesPrice && matchesCondition && matchesRegion;
+  });
+
   renderProducts(currentProducts);
+
+  // 검색 결과 알림 (선택 사항)
+  if (query && currentProducts.length === 0) {
+    showNotification('검색 결과', '일치하는 상품이 없습니다.', 'info');
+  }
 }
 
 function toggleFavorite(productId) {
@@ -542,22 +577,52 @@ function setupEventListeners() {
       filterByCategory(category);
     });
   });
+
+  // 필터 셀렉트박스 변경 이벤트 추가
+  ['categoryFilter', 'priceFilter', 'conditionFilter', 'regionFilter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('change', () => {
+        // 셀렉트박스에서 카테고리 변경 시 상단 nav와 동기화
+        if (id === 'categoryFilter') {
+          const category = el.value;
+          const navItems = document.querySelectorAll('.nav-item');
+          navItems.forEach(nav => {
+            nav.classList.toggle('active', nav.getAttribute('data-category') === category);
+          });
+
+          const sectionTitle = document.querySelector('.section-title');
+          if (sectionTitle) {
+            if (category === 'all') sectionTitle.textContent = '전체 상품';
+            else {
+              const categoryName = document.querySelector(`.nav-item[data-category="${category}"]`).textContent;
+              sectionTitle.textContent = `${categoryName} 상품`;
+            }
+          }
+        }
+        applyFilters();
+      });
+    }
+  });
 }
 
 function filterByCategory(category) {
+  // 카테고리 셀렉트박스와 동기화
+  const categorySelect = document.getElementById('categoryFilter');
+  if (categorySelect) categorySelect.value = category;
+
   const sectionTitle = document.querySelector('.section-title');
 
   if (category === 'all') {
-    currentProducts = [...products];
     if (sectionTitle) sectionTitle.textContent = '전체 상품';
   } else {
-    currentProducts = products.filter(p => p.category === category);
     if (sectionTitle) {
       const categoryName = document.querySelector(`.nav-item[data-category="${category}"]`).textContent;
       sectionTitle.textContent = `${categoryName} 상품`;
     }
   }
-  renderProducts(currentProducts);
+
+  applyFilters();
 }
 
 // 마이페이지 관련 기능
