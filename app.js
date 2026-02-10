@@ -503,6 +503,84 @@ async function handleEditProduct(event) {
   }
 }
 
+// ===== UI Helper Functions (Restored) =====
+
+function showLoginModal() {
+  document.getElementById('loginModal').classList.add('active');
+}
+
+function showSellModal() {
+  if (!currentUser) {
+    showNotification('로그인 필요', '판매를 하려면 로그인이 필요합니다.', 'error');
+    showLoginModal();
+    return;
+  }
+  document.getElementById('sellModal').classList.add('active');
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.remove('active');
+}
+
+function switchToSignup() {
+  closeModal('loginModal');
+  document.getElementById('signupModal').classList.add('active');
+}
+
+function switchToLogin() {
+  closeModal('signupModal');
+  showLoginModal();
+}
+
+function showNotification(title, message, type = 'success') {
+  const container = document.getElementById('notificationContainer');
+  if (!container) return;
+
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.innerHTML = `
+    <div class="notification-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</div>
+    <div class="notification-content">
+      <div class="notification-title">${title}</div>
+      <div class="notification-message">${message}</div>
+    </div>
+  `;
+
+  container.appendChild(notification);
+
+  // Animation
+  setTimeout(() => {
+    notification.style.animation = 'fadeOut 0.5s ease forwards';
+    setTimeout(() => {
+      notification.remove();
+    }, 500);
+  }, 3000);
+}
+
+function setupEventListeners() {
+  // Close modal on outside click
+  window.onclick = function (event) {
+    if (event.target.classList.contains('modal')) {
+      event.target.classList.remove('active');
+    }
+  };
+
+  // Search Enter Key
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        performSearch();
+      }
+    });
+  }
+}
+
+// Placeholder functions for missing features
+function viewMyProfile() { showNotification('준비 중', '내 프로필 기능은 준비 중입니다.', 'info'); }
+function viewMyListings() { showNotification('준비 중', '내 상품 목록 기능은 준비 중입니다.', 'info'); }
+function viewFavorites() { showNotification('준비 중', '찜한 상품 목록 기능은 준비 중입니다.', 'info'); }
+
 // ===== 렌더링 및 UI 함수들 =====
 
 function renderProducts(productsToRender) {
