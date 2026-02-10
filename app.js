@@ -66,6 +66,7 @@ function initializeAuth() {
 function updateHeaderForUser() {
   const headerActions = document.querySelector('.header-actions');
   const themeBtn = `<button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" aria-label="테마 변경">🌙</button>`;
+  const communityBtn = `<button class="btn btn-secondary" onclick="switchTab('community')" id="headerCommunityBtn" style="background: rgba(99, 102, 241, 0.1); border-color: var(--primary); color: var(--primary-light);">💬 커뮤니티</button>`;
 
   if (currentUser) {
     const avatarText = currentUser.photoURL
@@ -74,6 +75,7 @@ function updateHeaderForUser() {
 
     headerActions.innerHTML = `
       ${themeBtn}
+      ${communityBtn}
       <button class="btn btn-primary" onclick="showSellModal()">판매하기</button>
       <div class="user-profile" onclick="toggleDropdown()">
         <div class="user-avatar">${avatarText}</div>
@@ -101,6 +103,7 @@ function updateHeaderForUser() {
   } else {
     headerActions.innerHTML = `
       ${themeBtn}
+      ${communityBtn}
       <button class="btn btn-secondary" onclick="showLoginModal()">로그인</button>
       <button class="btn btn-primary" onclick="showSellModal()">판매하기</button>
     `;
@@ -855,14 +858,29 @@ function switchTab(tab) {
   activeTab = tab;
   const marketplaceSection = document.getElementById('marketplaceSection');
   const communitySection = document.getElementById('communitySection');
+  const headerCommunityBtn = document.getElementById('headerCommunityBtn');
+  const navItems = document.querySelectorAll('.nav-item');
 
   if (tab === 'community') {
     if (marketplaceSection) marketplaceSection.style.display = 'none';
     if (communitySection) communitySection.style.display = 'block';
+    if (headerCommunityBtn) {
+      headerCommunityBtn.style.background = 'var(--primary)';
+      headerCommunityBtn.style.color = 'white';
+    }
+    navItems.forEach(nav => nav.classList.remove('active'));
     renderCommunity();
   } else {
     if (marketplaceSection) marketplaceSection.style.display = 'block';
     if (communitySection) communitySection.style.display = 'none';
+    if (headerCommunityBtn) {
+      headerCommunityBtn.style.background = 'rgba(99, 102, 241, 0.1)';
+      headerCommunityBtn.style.color = 'var(--primary-light)';
+    }
+    // '전체' 탭 활성화 (홈으로 돌아올 때)
+    if (tab === 'home') {
+      navItems.forEach(nav => nav.classList.toggle('active', nav.getAttribute('data-category') === 'all'));
+    }
     renderProducts(currentProducts);
   }
 }

@@ -38,6 +38,9 @@
 
       <div class="header-actions">
         <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" aria-label="테마 변경">🌙</button>
+        <button class="btn btn-secondary" onclick="switchTab('community')"
+          style="background: rgba(99, 102, 241, 0.1); border-color: var(--primary); color: var(--primary-light);">💬
+          커뮤니티</button>
         <button class="btn btn-secondary" onclick="showLoginModal()">로그인</button>
         <button class="btn btn-primary" onclick="showSellModal()">판매하기</button>
       </div>
@@ -55,7 +58,6 @@
       <div class="nav-item" data-category="card">🃏 카드/TCG</div>
       <div class="nav-item" data-category="plush">🧸 인형/플러시</div>
       <div class="nav-item" data-category="merch">✨ 기타 굿즈</div>
-      <div class="nav-item" data-tab="community">💬 커뮤니티</div>
     </div>
   </nav>
 
