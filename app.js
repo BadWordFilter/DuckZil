@@ -227,8 +227,9 @@ async function loadProducts() {
     renderProducts(currentProducts);
 
     // 통계 업데이트 (인트로 전용)
+    const soldProducts = products.filter(p => p.status === 'sold');
     animateValue("statProductsIntro", 0, products.length, 1500);
-    animateValue("statTradesIntro", 0, 154, 1500); // 예시 데이터
+    animateValue("statTradesIntro", 0, soldProducts.length, 1500);
   });
 }
 
@@ -266,7 +267,9 @@ async function handleSellProduct(event) {
       location: regionNames[region] || '서울', region: region || 'seoul',
       image,
       seller: currentUser.nickname, sellerEmail: currentUser.email, sellerUID: currentUser.uid,
-      description, badge: 'new', views: 0, likes: 0, createdAt: new Date()
+      description, badge: 'new', views: 0, likes: 0,
+      status: 'selling', // 기본 상태: 판매 중
+      createdAt: new Date()
     });
     closeModal('sellModal');
     document.getElementById('sellForm').reset();
@@ -601,6 +604,7 @@ function renderProducts(productsToRender) {
           <div class="product-meta">👁️ ${product.views || 0} · ❤️ ${product.likes || 0}</div>
         </div>
       </div>
+      ${product.status === 'sold' ? '<div class="sold-overlay"><span>판매 완료</span></div>' : ''}
     </div>
   `).join('');
 }
@@ -633,23 +637,49 @@ function showProductDetail(productId) {
   const modalActions = document.querySelector('#productModal .modal-actions');
 
   if (currentUser && (currentUser.uid === product.sellerUID || currentUser.email === product.sellerEmail)) {
+    const statusBtnLabel = product.status === 'sold' ? '🔄 다시 판매하기' : '✅ 판매 완료로 변경';
+    const nextStatus = product.status === 'sold' ? 'selling' : 'sold';
+    const statusBtnColor = product.status === 'sold' ? 'var(--secondary)' : 'var(--success)';
+
     modalActions.innerHTML = `
-      <div style="display: flex; gap: 8px; width: 100%;">
-        <button class="btn btn-secondary btn-large" style="background-color: #ef4444; color: white; border: none; flex: 1;" onclick="handleDeleteProduct('${product.id}')">🗑️ 삭제</button>
-        <button class="btn btn-primary btn-large" style="flex: 1;" onclick="showEditModal('${product.id}')">✏️ 수정</button>
-        <button class="btn btn-secondary btn-large" style="flex: 1;" onclick="closeModal('productModal')">닫기</button>
+      <div style="flex-direction: column; gap: 8px; width: 100%; display: flex;">
+        <button class="btn btn-primary btn-large" style="background-color: ${statusBtnColor};" onclick="updateProductStatus('${product.id}', '${nextStatus}')">${statusBtnLabel}</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-large" style="background-color: #ef4444; color: white; border: none; flex: 1;" onclick="handleDeleteProduct('${product.id}')">🗑️ 삭제</button>
+          <button class="btn btn-primary btn-large" style="flex: 1;" onclick="showEditModal('${product.id}')">✏️ 수정</button>
+          <button class="btn btn-secondary btn-large" style="flex: 1;" onclick="closeModal('productModal')">닫기</button>
+        </div>
       </div>
     `;
   } else {
     modalActions.innerHTML = `
       <div style="display: flex; gap: 8px; width: 100%;">
-        <button class="btn btn-secondary btn-large" style="flex: 1;" onclick="showNotification('준비 중', '채팅 기능은 준비 중입니다.', 'info')">💬 채팅하기</button>
-        <button class="btn btn-primary btn-large" style="flex: 1;" onclick="showNotification('준비 중', '결제 기능은 준비 중입니다.', 'info')">💰 구매하기</button>
+        <button class="btn btn-secondary btn-large" style="flex: 1;" ${product.status === 'sold' ? 'disabled' : ''} onclick="showNotification('준비 중', '채팅 기능은 준비 중입니다.', 'info')">💬 채팅하기</button>
+        <button class="btn btn-primary btn-large" style="flex: 1;" ${product.status === 'sold' ? 'disabled' : ''} onclick="showNotification('준비 중', '결제 기능은 준비 중입니다.', 'info')">${product.status === 'sold' ? '품절' : '💰 구매하기'}</button>
       </div>
     `;
   }
   document.getElementById('productModal').classList.add('active');
 }
+
+async function updateProductStatus(productId, newStatus) {
+  try {
+    await updateDoc(doc(db, 'products', productId), {
+      status: newStatus,
+      updatedAt: new Date()
+    });
+
+    // 모달 닫기 및 알림
+    closeModal('productModal');
+    const msg = newStatus === 'sold' ? '상품이 판매 완료 처리되었습니다.' : '상품이 다시 판매 중으로 변경되었습니다.';
+    showNotification('상태 변경', msg);
+  } catch (error) {
+    console.error('상태 변경 오류:', error);
+    showNotification('변경 실패', '오류가 발생했습니다.', 'error');
+  }
+}
+
+window.updateProductStatus = updateProductStatus;
 
 function performSearch() {
   if (activeTab !== 'home') {
