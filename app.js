@@ -1,4 +1,3 @@
-// Firebase 가져오기
 import {
   auth,
   db,
@@ -18,69 +17,30 @@ import {
   doc,
   where,
   deleteDoc
-} from './firebase-config.js';
+} from "./firebase-config.js";
 
-// Sample Product Data (초기 데이터 - Firebase에 한번만 업로드)
-const sampleProducts = [
-  {
-    title: "젤다의 전설 티어스 오브 더 킹덤 한글판",
-    category: "game",
-    categoryName: "게임",
-    price: 45000,
-    condition: "like-new",
-    conditionName: "거의 새것",
-    location: "서울 강남구",
-    region: "seoul",
-    image: "zelda_totk.jpg",
-    seller: "닌텐덕후",
-    sellerEmail: "nintendo@example.com",
-    description: "한 번만 플레이하고 케이스에 보관했습니다. 상태 매우 좋아요! 직거래 가능합니다.",
-    badge: "hot",
-    views: 342,
-    likes: 28,
-    createdAt: new Date()
-  },
-  {
-    title: "원피스 조로 P.O.P 피규어 한정판",
-    category: "figure",
-    categoryName: "피규어",
-    price: 180000,
-    condition: "new",
-    conditionName: "미개봉 새상품",
-    location: "경기 성남시",
-    region: "gyeonggi",
-    image: "zoro_figure.jpg",
-    seller: "피규어마니아",
-    sellerEmail: "figure@example.com",
-    description: "일본 직구로 받은 한정판 피규어입니다. 미개봉 새상품이며 박스 상태도 완벽합니다. 택배비 별도",
-    badge: "new",
-    views: 521,
-    likes: 45,
-    createdAt: new Date()
-  }
-];
-
-// State
+// ===== 전역 변수 =====
 let products = [];
 let currentProducts = [];
 let favorites = new Set();
 let currentUser = null;
 
-// Initialize
+// ===== 초기화 =====
 document.addEventListener('DOMContentLoaded', () => {
-  // Theme initialization
+  // 테마 초기화
   const savedTheme = localStorage.getItem('theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
 
   initializeAuth();
   loadProducts();
-  loadUserStats();
+  loadUserStats(); // 유저 통계 (가입자 수 등)
   setupEventListeners();
   updateThemeIcon();
+
+  console.log('🚀 오타쿠 마켓 초기화 완료');
 });
 
-// ===== Firebase Authentication =====
-
+// ===== 인증 (Authentication) =====
 function initializeAuth() {
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -90,131 +50,18 @@ function initializeAuth() {
         nickname: user.displayName || user.email.split('@')[0],
         photoURL: user.photoURL
       };
-      console.log('✅ 로그인됨:', currentUser);
-      updateHeaderForUser();
+      console.log('✅ 로그인됨:', currentUser.nickname);
     } else {
       currentUser = null;
       console.log('❌ 로그아웃됨');
-      updateHeaderForUser();
     }
+    updateHeaderForUser();
   });
-}
-
-async function handleSignup(event) {
-  event.preventDefault();
-
-  const nickname = document.getElementById('signupNickname').value;
-  const email = document.getElementById('signupEmail').value;
-  const password = document.getElementById('signupPassword').value;
-  const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
-  const region = document.getElementById('signupRegion').value;
-
-  if (password !== passwordConfirm) {
-    showNotification('회원가입 실패', '비밀번호가 일치하지 않습니다.', 'error');
-    return;
-  }
-
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    // Firestore에 사용자 추가 정보 저장
-    await addDoc(collection(db, 'users'), {
-      uid: user.uid,
-      nickname: nickname,
-      email: email,
-      region: region,
-      joinDate: new Date(),
-      salesCount: 0
-    });
-
-    closeModal('signupModal');
-    document.getElementById('signupForm').reset();
-    showNotification('회원가입 성공!', `${nickname}님, 오타쿠 마켓에 오신 것을 환영합니다!`);
-  } catch (error) {
-    console.error('회원가입 오류:', error);
-    let message = '회원가입에 실패했습니다.';
-    if (error.code === 'auth/email-already-in-use') {
-      message = '이미 사용 중인 이메일입니다.';
-    } else if (error.code === 'auth/weak-password') {
-      message = '비밀번호는 최소 6자 이상이어야 합니다.';
-    }
-    showNotification('회원가입 실패', message, 'error');
-  }
-}
-
-async function handleLogin(event) {
-  event.preventDefault();
-
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPassword').value;
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    closeModal('loginModal');
-    showNotification('로그인 성공!', `환영합니다!`);
-  } catch (error) {
-    console.error('로그인 오류:', error);
-    showNotification('로그인 실패', '이메일 또는 비밀번호가 잘못되었습니다.', 'error');
-  }
-}
-
-async function handleSocialLogin(provider) {
-  if (provider === 'google') {
-    const googleProvider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      // Firestore에 사용자 정보 저장 (처음 로그인인 경우)
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('uid', '==', user.uid));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        await addDoc(collection(db, 'users'), {
-          uid: user.uid,
-          nickname: user.displayName || user.email.split('@')[0],
-          email: user.email,
-          region: 'seoul',
-          joinDate: new Date(),
-          salesCount: 0
-        });
-        showNotification('회원가입 완료!', `${user.displayName}님, 환영합니다!`);
-      } else {
-        showNotification('로그인 성공!', `환영합니다!`);
-      }
-
-      closeModal('loginModal');
-    } catch (error) {
-      console.error('Google 로그인 오류:', error);
-
-      let message = 'Google 로그인에 실패했습니다.';
-      if (error.code === 'auth/unauthorized-domain') {
-        message = 'Firebase Console에서 도메인을 승인해주세요.\n이메일/비밀번호 로그인을 사용해주세요.';
-      } else if (error.code === 'auth/popup-blocked') {
-        message = '팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.';
-      }
-
-      showNotification('로그인 실패', message, 'error');
-    }
-  } else {
-    showNotification('오류', '지원하지 않는 로그인 방식입니다.', 'error');
-  }
-}
-
-async function handleLogout() {
-  try {
-    await signOut(auth);
-    closeDropdown();
-    showNotification('로그아웃', '로그아웃되었습니다.');
-  } catch (error) {
-    console.error('로그아웃 오류:', error);
-  }
 }
 
 function updateHeaderForUser() {
   const headerActions = document.querySelector('.header-actions');
+  const themeBtn = `<button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" aria-label="테마 변경">🌙</button>`;
 
   if (currentUser) {
     const avatarText = currentUser.photoURL
@@ -222,7 +69,7 @@ function updateHeaderForUser() {
       : currentUser.nickname.charAt(0);
 
     headerActions.innerHTML = `
-      <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" aria-label="테마 변경">🌙</button>
+      ${themeBtn}
       <button class="btn btn-primary" onclick="showSellModal()">판매하기</button>
       <div class="user-profile" onclick="toggleDropdown()">
         <div class="user-avatar">${avatarText}</div>
@@ -249,84 +96,135 @@ function updateHeaderForUser() {
     `;
   } else {
     headerActions.innerHTML = `
-      <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" aria-label="테마 변경">🌙</button>
+      ${themeBtn}
       <button class="btn btn-secondary" onclick="showLoginModal()">로그인</button>
       <button class="btn btn-primary" onclick="showSellModal()">판매하기</button>
     `;
   }
-
-  // Update icon after re-render
   updateThemeIcon();
 }
 
-// ===== Firebase Firestore 제품 관리 =====
+async function handleSignup(event) {
+  event.preventDefault();
+  const nickname = document.getElementById('signupNickname').value;
+  const email = document.getElementById('signupEmail').value;
+  const password = document.getElementById('signupPassword').value;
+  const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+  const region = document.getElementById('signupRegion').value;
+
+  if (password !== passwordConfirm) {
+    showNotification('회원가입 실패', '비밀번호가 일치하지 않습니다.', 'error');
+    return;
+  }
+
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    await addDoc(collection(db, 'users'), {
+      uid: user.uid,
+      nickname: nickname,
+      email: email,
+      region: region,
+      joinDate: new Date(),
+      salesCount: 0
+    });
+    closeModal('signupModal');
+    document.getElementById('signupForm').reset();
+    showNotification('회원가입 성공!', `${nickname}님 환영합니다!`);
+  } catch (error) {
+    console.error('회원가입 오류:', error);
+    showNotification('회원가입 실패', '이미 사용 중인 이메일이거나 비밀번호가 너무 약합니다.', 'error');
+  }
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    closeModal('loginModal');
+    showNotification('로그인 성공!', `환영합니다!`);
+  } catch (error) {
+    console.error('로그인 오류:', error);
+    showNotification('로그인 실패', '이메일 또는 비밀번호가 잘못되었습니다.', 'error');
+  }
+}
+
+async function handleSocialLogin(provider) {
+  if (provider !== 'google') {
+    showNotification('알림', '구글 로그인만 지원합니다.', 'info');
+    return;
+  }
+
+  const googleProvider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+
+    // 사용자 정보 저장 확인
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('uid', '==', user.uid));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      await addDoc(collection(db, 'users'), {
+        uid: user.uid,
+        nickname: user.displayName || user.email.split('@')[0],
+        email: user.email,
+        region: 'seoul',
+        joinDate: new Date(),
+        salesCount: 0
+      });
+      showNotification('회원가입 완료', `${user.displayName}님 환영합니다!`);
+    } else {
+      showNotification('로그인 성공', `환영합니다!`);
+    }
+    closeModal('loginModal');
+  } catch (error) {
+    console.error('소셜 로그인 오류:', error);
+    showNotification('로그인 실패', '구글 로그인 중 오류가 발생했습니다.', 'error');
+  }
+}
+
+async function handleLogout() {
+  try {
+    await signOut(auth);
+    closeDropdown();
+    showNotification('로그아웃', '로그아웃되었습니다.');
+  } catch (error) {
+    console.error('로그아웃 오류:', error);
+  }
+}
+
+// ===== 상품 관리 (Product Management) =====
 
 async function loadProducts() {
   const productsRef = collection(db, 'products');
   const q = query(productsRef, orderBy('createdAt', 'desc'));
 
-  // 실시간 리스너
   onSnapshot(q, (snapshot) => {
     products = [];
     snapshot.forEach((doc) => {
-      products.push({
-        id: doc.id,
-        ...doc.data()
-      });
+      products.push({ id: doc.id, ...doc.data() });
     });
 
     currentProducts = [...products];
     renderProducts(currentProducts);
 
-    // 통계 업데이트 (상품 수)
-    const totalProducts = products.length;
-    animateValue("statProducts", 0, totalProducts, 1000);
-
-    // 통계 업데이트 (거래 완료 - 현재 구매 기능 미구현으로 0 처리)
-    const totalTrades = 0;
-    animateValue("statTrades", 0, totalTrades, 1000);
-
-    console.log('✅ 상품 로드됨:', products.length, '개');
+    // 통계 업데이트
+    animateValue("statProducts", 0, products.length, 1000);
+    animateValue("statTrades", 0, 0, 1000); // 거래 기능 미구현으로 0
   });
-}
-
-function loadUserStats() {
-  const usersRef = collection(db, 'users');
-  onSnapshot(usersRef, (snapshot) => {
-    const totalUsers = snapshot.size;
-    animateValue("statUsers", 0, totalUsers, 1000);
-  });
-}
-
-function animateValue(id, start, end, duration) {
-  const obj = document.getElementById(id);
-  if (!obj) return;
-
-  // 숫자가 0이면 애니메이션 없이 바로 표시
-  if (end === 0) {
-    obj.innerHTML = "0";
-    return;
-  }
-
-  let startTimestamp = null;
-  const step = (timestamp) => {
-    if (!startTimestamp) startTimestamp = timestamp;
-    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-    obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
-    if (progress < 1) {
-      window.requestAnimationFrame(step);
-    }
-  };
-  window.requestAnimationFrame(step);
 }
 
 async function handleSellProduct(event) {
   event.preventDefault();
-
   if (!currentUser) {
     closeModal('sellModal');
-    showNotification('로그인 필요', '상품을 등록하려면 로그인이 필요합니다.', 'error');
-    setTimeout(() => showLoginModal(), 500);
+    showNotification('로그인 필요', '로그인이 필요합니다.', 'error');
+    showLoginModal();
     return;
   }
 
@@ -337,86 +235,41 @@ async function handleSellProduct(event) {
   const description = document.getElementById('sellDescription').value;
   const region = document.getElementById('sellRegion').value;
 
-  const categoryNames = {
-    game: '게임',
-    figure: '피규어',
-    anime: '애니 굿즈',
-    manga: '만화책',
-    card: '카드/TCG',
-    plush: '인형/플러시',
-    merch: '기타 굿즈'
-  };
-
-  const conditionNames = {
-    'new': '미개봉 새상품',
-    'like-new': '거의 새것',
-    'good': '양호',
-    'fair': '사용감 있음'
-  };
-
-  const regionNames = {
-    seoul: '서울',
-    gyeonggi: '경기',
-    incheon: '인천',
-    busan: '부산',
-    daegu: '대구',
-    gwangju: '광주',
-    daejeon: '대전',
-    ulsan: '울산',
-    sejong: '세종',
-    gangwon: '강원',
-    chungbuk: '충북',
-    chungnam: '충남',
-    jeonbuk: '전북',
-    jeonnam: '전남',
-    gyeongbuk: '경북',
-    gyeongnam: '경남',
-    jeju: '제주'
-  };
+  const categoryNames = { game: '게임', figure: '피규어', anime: '애니 굿즈', manga: '만화책', card: '카드/TCG', plush: '인형/플러시', merch: '기타 굿즈' };
+  const conditionNames = { 'new': '미개봉 새상품', 'like-new': '거의 새것', 'good': '양호', 'fair': '사용감 있음' };
+  const regionNames = { seoul: '서울', gyeonggi: '경기', incheon: '인천', busan: '부산', daegu: '대구', gwangju: '광주', daejeon: '대전', ulsan: '울산', sejong: '세종', gangwon: '강원', chungbuk: '충북', chungnam: '충남', jeonbuk: '전북', jeonnam: '전남', gyeongbuk: '경북', gyeongnam: '경남', jeju: '제주' };
 
   try {
     await addDoc(collection(db, 'products'), {
-      title,
-      category,
-      categoryName: categoryNames[category],
-      price,
-      condition,
-      conditionName: conditionNames[condition],
-      location: regionNames[region] || '서울',
-      region: region || 'seoul',
+      title, category, categoryName: categoryNames[category],
+      price, condition, conditionName: conditionNames[condition],
+      location: regionNames[region] || '서울', region: region || 'seoul',
       image: 'placeholder.jpg',
-      seller: currentUser.nickname,
-      sellerEmail: currentUser.email,
-      sellerUID: currentUser.uid,
-      description,
-      badge: 'new',
-      views: 0,
-      likes: 0,
-      createdAt: new Date()
+      seller: currentUser.nickname, sellerEmail: currentUser.email, sellerUID: currentUser.uid,
+      description, badge: 'new', views: 0, likes: 0, createdAt: new Date()
     });
-
     closeModal('sellModal');
     document.getElementById('sellForm').reset();
-    showNotification('상품 등록 완료!', '상품이 성공적으로 등록되었습니다.');
+    showNotification('등록 완료', '상품이 등록되었습니다.');
   } catch (error) {
     console.error('상품 등록 오류:', error);
-    showNotification('등록 실패', '상품 등록에 실패했습니다.', 'error');
+    showNotification('등록 실패', '오류가 발생했습니다.', 'error');
   }
 }
 
 async function handleDeleteProduct(productId) {
-  if (!confirm('정말로 이 상품을 삭제하시겠습니까?')) return;
-
+  if (!confirm('정말로 삭제하시겠습니까?')) return;
   try {
     await deleteDoc(doc(db, 'products', productId));
     closeModal('productModal');
     showNotification('삭제 완료', '상품이 삭제되었습니다.');
   } catch (error) {
-    console.error('상품 삭제 오류:', error);
-    showNotification('삭제 실패', '상품 삭제 중 오류가 발생했습니다.', 'error');
+    console.error('삭제 오류:', error);
+    showNotification('삭제 실패', '오류가 발생했습니다.', 'error');
   }
 }
 
+// 수정 모달 열기
 function showEditModal(productId) {
   const product = products.find(p => p.id === productId);
   if (!product) return;
@@ -433,6 +286,7 @@ function showEditModal(productId) {
   document.getElementById('editModal').classList.add('active');
 }
 
+// 상품 수정 처리
 async function handleEditProduct(event) {
   event.preventDefault();
 
@@ -444,159 +298,131 @@ async function handleEditProduct(event) {
   const description = document.getElementById('editDescription').value;
   const region = document.getElementById('editRegion').value;
 
-  const categoryNames = {
-    game: '게임',
-    figure: '피규어',
-    anime: '애니 굿즈',
-    manga: '만화책',
-    card: '카드/TCG',
-    plush: '인형/플러시',
-    merch: '기타 굿즈'
-  };
-
-  const conditionNames = {
-    'new': '미개봉 새상품',
-    'like-new': '거의 새것',
-    'good': '양호',
-    'fair': '사용감 있음'
-  };
-
-  const regionNames = {
-    seoul: '서울',
-    gyeonggi: '경기',
-    incheon: '인천',
-    busan: '부산',
-    daegu: '대구',
-    gwangju: '광주',
-    daejeon: '대전',
-    ulsan: '울산',
-    sejong: '세종',
-    gangwon: '강원',
-    chungbuk: '충북',
-    chungnam: '충남',
-    jeonbuk: '전북',
-    jeonnam: '전남',
-    gyeongbuk: '경북',
-    gyeongnam: '경남',
-    jeju: '제주'
-  };
+  const categoryNames = { game: '게임', figure: '피규어', anime: '애니 굿즈', manga: '만화책', card: '카드/TCG', plush: '인형/플러시', merch: '기타 굿즈' };
+  const conditionNames = { 'new': '미개봉 새상품', 'like-new': '거의 새것', 'good': '양호', 'fair': '사용감 있음' };
+  const regionNames = { seoul: '서울', gyeonggi: '경기', incheon: '인천', busan: '부산', daegu: '대구', gwangju: '광주', daejeon: '대전', ulsan: '울산', sejong: '세종', gangwon: '강원', chungbuk: '충북', chungnam: '충남', jeonbuk: '전북', jeonnam: '전남', gyeongbuk: '경북', gyeongnam: '경남', jeju: '제주' };
 
   try {
     await updateDoc(doc(db, 'products', productId), {
-      title,
-      category,
-      categoryName: categoryNames[category],
-      price,
-      condition,
-      conditionName: conditionNames[condition],
-      location: regionNames[region] || '서울',
-      region: region || 'seoul',
-      description,
-      updatedAt: new Date()
+      title, category, categoryName: categoryNames[category],
+      price, condition, conditionName: conditionNames[condition],
+      location: regionNames[region] || '서울', region: region || 'seoul',
+      description, updatedAt: new Date()
     });
-
     closeModal('editModal');
-    showNotification('수정 완료', '상품 정보가 수정되었습니다.');
+    showNotification('수정 완료', '상품이 수정되었습니다.');
   } catch (error) {
-    console.error('상품 수정 오류:', error);
-    showNotification('수정 실패', '상품 수정 중 오류가 발생했습니다.', 'error');
+    console.error('수정 오류:', error);
+    showNotification('수정 실패', '오류가 발생했습니다.', 'error');
   }
 }
 
-// ===== UI Helper Functions (Restored) =====
+// ===== UI & Utility Functions =====
 
 function showLoginModal() {
   document.getElementById('loginModal').classList.add('active');
 }
-
 function showSellModal() {
   if (!currentUser) {
-    showNotification('로그인 필요', '판매를 하려면 로그인이 필요합니다.', 'error');
+    showNotification('로그인 필요', '판매하려면 로그인이 필요합니다.', 'error');
     showLoginModal();
     return;
   }
   document.getElementById('sellModal').classList.add('active');
 }
-
 function closeModal(modalId) {
   document.getElementById(modalId).classList.remove('active');
 }
-
 function switchToSignup() {
   closeModal('loginModal');
   document.getElementById('signupModal').classList.add('active');
 }
-
 function switchToLogin() {
   closeModal('signupModal');
   showLoginModal();
+}
+function toggleDropdown() {
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) dropdown.classList.toggle('show');
+}
+function closeDropdown() {
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown) dropdown.classList.remove('show');
 }
 
 function showNotification(title, message, type = 'success') {
   const container = document.getElementById('notificationContainer');
   if (!container) return;
-
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
   notification.innerHTML = `
     <div class="notification-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</div>
-    <div class="notification-content">
-      <div class="notification-title">${title}</div>
-      <div class="notification-message">${message}</div>
-    </div>
+    <div class="notification-content"><div class="notification-title">${title}</div><div class="notification-message">${message}</div></div>
   `;
-
   container.appendChild(notification);
-
-  // Animation
   setTimeout(() => {
     notification.style.animation = 'fadeOut 0.5s ease forwards';
-    setTimeout(() => {
-      notification.remove();
-    }, 500);
+    setTimeout(() => notification.remove(), 500);
   }, 3000);
 }
 
-function setupEventListeners() {
-  // Close modal on outside click
-  window.onclick = function (event) {
-    if (event.target.classList.contains('modal')) {
-      event.target.classList.remove('active');
-    }
-  };
-
-  // Search Enter Key
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) {
-    searchInput.addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-        performSearch();
-      }
-    });
-  }
+// 테마 (Theme)
+function toggleTheme() {
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  updateThemeIcon();
+}
+function updateThemeIcon() {
+  const toggleBtns = document.querySelectorAll('.theme-toggle');
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  toggleBtns.forEach(btn => {
+    btn.textContent = currentTheme === 'dark' ? '🌙' : '☀️';
+  });
 }
 
-// Placeholder functions for missing features
-function viewMyProfile() { showNotification('준비 중', '내 프로필 기능은 준비 중입니다.', 'info'); }
-function viewMyListings() { showNotification('준비 중', '내 상품 목록 기능은 준비 중입니다.', 'info'); }
-function viewFavorites() { showNotification('준비 중', '찜한 상품 목록 기능은 준비 중입니다.', 'info'); }
+// 기타 유틸리티
+function formatPrice(price) { return price.toLocaleString('ko-KR'); }
+function getCategoryEmoji(category) {
+  const emojis = { game: '🎮', figure: '🗿', anime: '📺', manga: '📚', card: '🃏', plush: '🧸', merch: '✨' };
+  return emojis[category] || '🎯';
+}
+function getColorForCategory(category) {
+  const colors = { game: '8B5CF6', figure: '3B82F6', anime: 'EC4899', manga: '10B981', card: 'F59E0B', plush: 'EF4444', merch: '6366F1' };
+  return colors[category] || '8B5CF6';
+}
 
-// ===== 렌더링 및 UI 함수들 =====
+function loadUserStats() {
+  onSnapshot(collection(db, 'users'), (snapshot) => {
+    animateValue("statUsers", 0, snapshot.size, 1000);
+  });
+}
 
+function animateValue(id, start, end, duration) {
+  const obj = document.getElementById(id);
+  if (!obj) return;
+  if (end === 0) { obj.innerHTML = "0"; return; }
+  let startTimestamp = null;
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+    obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+    if (progress < 1) window.requestAnimationFrame(step);
+  };
+  window.requestAnimationFrame(step);
+}
+
+// 렌더링
 function renderProducts(productsToRender) {
   const grid = document.getElementById('productGrid');
-
   if (!productsToRender || productsToRender.length === 0) {
-    grid.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text-secondary);">
         <div style="font-size: 48px; margin-bottom: 16px;">😢</div>
-        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">상품이 없습니다</div>
-        <div style="font-size: 14px;">첫 번째 상품을 등록해보세요!</div>
-      </div>
-    `;
+        <div style="font-size: 18px; font-weight: 600;">상품이 없습니다</div>
+      </div>`;
     return;
   }
-
   grid.innerHTML = productsToRender.map(product => `
     <div class="product-card" onclick="showProductDetail('${product.id}')">
       <div class="product-image">
@@ -618,138 +444,11 @@ function renderProducts(productsToRender) {
       </div>
     </div>
   `).join('');
-
-  setTimeout(() => {
-    document.querySelectorAll('.product-card').forEach((card, index) => {
-      card.style.animation = `slideDown 0.4s ease ${index * 0.05}s backwards`;
-    });
-  }, 10);
-}
-
-function setupEventListeners() {
-  // Navigation
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => {
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-
-      const category = item.dataset.category;
-      filterByCategory(category);
-    });
-  });
-
-  // Filters
-  document.getElementById('categoryFilter').addEventListener('change', applyFilters);
-  document.getElementById('priceFilter').addEventListener('change', applyFilters);
-  document.getElementById('conditionFilter').addEventListener('change', applyFilters);
-  document.getElementById('regionFilter').addEventListener('change', applyFilters);
-
-  // Sort
-  document.getElementById('sortSelect').addEventListener('change', sortProducts);
-
-  // Search
-  document.getElementById('searchInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      performSearch();
-    }
-  });
-
-  // Modal close on background click
-  document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
-      if (e.target.classList.contains('modal')) {
-        closeModal(e.target.id);
-      }
-    });
-  });
-}
-
-function filterByCategory(category) {
-  if (category === 'all') {
-    currentProducts = [...products];
-  } else {
-    currentProducts = products.filter(p => p.category === category);
-  }
-  renderProducts(currentProducts);
-}
-
-function applyFilters() {
-  const categoryFilter = document.getElementById('categoryFilter').value;
-  const priceFilter = document.getElementById('priceFilter').value;
-  const conditionFilter = document.getElementById('conditionFilter').value;
-  const regionFilter = document.getElementById('regionFilter').value;
-
-  currentProducts = products.filter(product => {
-    if (categoryFilter !== 'all' && product.category !== categoryFilter) return false;
-
-    if (priceFilter !== 'all') {
-      const [min, max] = priceFilter.split('-').map(Number);
-      if (product.price < min || product.price > max) return false;
-    }
-
-    if (conditionFilter !== 'all' && product.condition !== conditionFilter) return false;
-    if (regionFilter !== 'all' && product.region !== regionFilter) return false;
-
-    return true;
-  });
-
-  renderProducts(currentProducts);
-}
-
-function sortProducts() {
-  const sortBy = document.getElementById('sortSelect').value;
-
-  switch (sortBy) {
-    case 'recent':
-      currentProducts.sort((a, b) => {
-        const timeA = a.createdAt?.toMillis?.() || 0;
-        const timeB = b.createdAt?.toMillis?.() || 0;
-        return timeB - timeA;
-      });
-      break;
-    case 'low-price':
-      currentProducts.sort((a, b) => a.price - b.price);
-      break;
-    case 'high-price':
-      currentProducts.sort((a, b) => b.price - a.price);
-      break;
-    case 'popular':
-      currentProducts.sort((a, b) => (b.views || 0) - (a.views || 0));
-      break;
-  }
-
-  renderProducts(currentProducts);
-}
-
-function performSearch() {
-  const query = document.getElementById('searchInput').value.toLowerCase();
-
-  if (!query) {
-    currentProducts = [...products];
-  } else {
-    currentProducts = products.filter(product =>
-      product.title.toLowerCase().includes(query) ||
-      product.description.toLowerCase().includes(query) ||
-      product.categoryName.includes(query)
-    );
-  }
-
-  renderProducts(currentProducts);
-}
-
-function toggleFavorite(productId) {
-  if (favorites.has(productId)) {
-    favorites.delete(productId);
-  } else {
-    favorites.add(productId);
-  }
-  renderProducts(currentProducts);
 }
 
 function showProductDetail(productId) {
   const product = products.find(p => p.id === productId);
   if (!product) return;
-
   document.getElementById('modalImage').src = product.image;
   document.getElementById('modalImage').onerror = function () {
     this.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600'%3E%3Crect width='800' height='600' fill='%23${getColorForCategory(product.category)}'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='120' fill='white'%3E${getCategoryEmoji(product.category)}%3C/text%3E%3C/svg%3E`;
@@ -760,13 +459,8 @@ function showProductDetail(productId) {
   document.getElementById('modalCondition').textContent = product.conditionName;
   document.getElementById('modalLocation').textContent = product.location || '서울';
   document.getElementById('modalDescription').textContent = product.description;
+  document.getElementById('modalSeller').textContent = product.seller || '판매자';
 
-  const avatarText = product.seller?.charAt(0) || 'U';
-  document.getElementById('sellerAvatar').textContent = avatarText;
-  document.getElementById('sellerName').textContent = product.seller || '판매자';
-  document.getElementById('sellerStats').textContent = `⭐ 5.0 · 판매 0건`;
-
-  // Show/Hide Delete Button based on ownership
   const modalActions = document.querySelector('#productModal .modal-actions');
 
   if (currentUser && (currentUser.uid === product.sellerUID || currentUser.email === product.sellerEmail)) {
@@ -785,231 +479,72 @@ function showProductDetail(productId) {
       </div>
     `;
   }
-
   document.getElementById('productModal').classList.add('active');
-  document.body.style.overflow = 'hidden';
 }
 
-// ===== Modal Functions =====
-
-function showLoginModal() {
-  document.getElementById('loginModal').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function showSellModal() {
-  if (!currentUser) {
-    showNotification('로그인 필요', '판매하려면 먼저 로그인해주세요.', 'error');
-    setTimeout(() => showLoginModal(), 500);
-    return;
+function performSearch() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  if (!query) { currentProducts = [...products]; } else {
+    currentProducts = products.filter(product =>
+      product.title.toLowerCase().includes(query) ||
+      product.description.toLowerCase().includes(query) ||
+      product.categoryName.includes(query)
+    );
   }
-
-  document.getElementById('sellModal').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function switchToSignup() {
-  closeModal('loginModal');
-  setTimeout(() => {
-    document.getElementById('signupModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }, 300);
-}
-
-function switchToLogin() {
-  closeModal('signupModal');
-  setTimeout(() => {
-    document.getElementById('loginModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }, 300);
-}
-
-function closeModal(modalId) {
-  if (modalId) {
-    document.getElementById(modalId).classList.remove('active');
-  } else {
-    document.getElementById('productModal').classList.remove('active');
-  }
-  document.body.style.overflow = '';
-}
-
-function toggleDropdown() {
-  const dropdown = document.getElementById('userDropdown');
-  if (!dropdown) return;
-
-  dropdown.classList.toggle('active');
-
-  if (dropdown.classList.contains('active')) {
-    setTimeout(() => {
-      document.addEventListener('click', closeDropdownOnClickOutside);
-    }, 10);
-  }
-}
-
-function closeDropdown() {
-  const dropdown = document.getElementById('userDropdown');
-  if (dropdown) {
-    dropdown.classList.remove('active');
-  }
-  document.removeEventListener('click', closeDropdownOnClickOutside);
-}
-
-function closeDropdownOnClickOutside(e) {
-  const dropdown = document.getElementById('userDropdown');
-  const profile = document.querySelector('.user-profile');
-
-  if (dropdown && profile && !profile.contains(e.target)) {
-    closeDropdown();
-  }
-}
-
-function viewMyProfile() {
-  if (!currentUser) return;
-  showNotification('내 프로필', `닉네임: ${currentUser.nickname}\n이메일: ${currentUser.email}`);
-}
-
-function viewMyListings() {
-  if (!currentUser) return;
-  const myProducts = products.filter(p => p.sellerUID === currentUser.uid);
-  currentProducts = myProducts;
   renderProducts(currentProducts);
-  closeDropdown();
-  showNotification('내 판매 상품', `총 ${myProducts.length}개의 상품이 등록되어 있습니다.`);
 }
 
-function viewFavorites() {
-  const favoriteProducts = products.filter(p => favorites.has(p.id));
-  currentProducts = favoriteProducts;
+function toggleFavorite(productId) {
+  if (favorites.has(productId)) favorites.delete(productId);
+  else favorites.add(productId);
   renderProducts(currentProducts);
-  closeDropdown();
-  showNotification('찜한 상품', `총 ${favoriteProducts.length}개의 상품을 찜했습니다.`);
 }
 
-function showNotification(title, message, type = 'success') {
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    padding: 20px 24px;
-    min-width: 300px;
-    max-width: 400px;
-    box-shadow: var(--shadow-lg);
-    z-index: 10000;
-    animation: slideDown 0.3s ease;
-  `;
-
-  const iconMap = {
-    success: '✅',
-    error: '❌',
-    info: '💡'
+function setupEventListeners() {
+  window.onclick = function (event) {
+    if (event.target.classList.contains('modal')) event.target.classList.remove('active');
+    if (!event.target.matches('.user-profile') && !event.target.closest('.user-profile')) closeDropdown();
   };
-
-  notification.innerHTML = `
-    <div style="display: flex; align-items: flex-start; gap: 12px;">
-      <div style="font-size: 24px;">${iconMap[type] || '✅'}</div>
-      <div style="flex: 1;">
-        <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px; color: var(--text-primary);">${title}</div>
-        <div style="font-size: 14px; color: var(--text-secondary); white-space: pre-line;">${message}</div>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.animation = 'fadeOut 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') performSearch();
+    });
+  }
 }
 
-// Utility Functions
-function toggleTheme() {
-  const currentTheme = localStorage.getItem('theme') || 'dark';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+// 미구현 기능 더미
+function viewMyProfile() { showNotification('준비 중', '내 프로필 기능은 준비 중입니다.', 'info'); }
+function viewMyListings() { showNotification('준비 중', '내 상품 목록 기능은 준비 중입니다.', 'info'); }
+function viewFavorites() { showNotification('준비 중', '찜한 상품 목록 기능은 준비 중입니다.', 'info'); }
 
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  updateThemeIcon();
-}
-
-function updateThemeIcon() {
-  const toggleBtns = document.querySelectorAll('.theme-toggle');
-  const currentTheme = localStorage.getItem('theme') || 'dark';
-  const icon = currentTheme === 'dark' ? '🌙' : '☀️';
-
-  toggleBtns.forEach(btn => {
-    btn.textContent = icon;
-    btn.setAttribute('aria-label', currentTheme === 'dark' ? '다크 모드' : '라이트 모드');
-  });
-}
-
-function formatPrice(price) {
-  return price.toLocaleString('ko-KR');
-}
-
-function getCategoryEmoji(category) {
-  const emojis = {
-    game: '🎮',
-    figure: '🗿',
-    anime: '📺',
-    manga: '📚',
-    card: '🃏',
-    plush: '🧸',
-    merch: '✨'
-  };
-  return emojis[category] || '🎯';
-}
-
-function getColorForCategory(category) {
-  const colors = {
-    game: '8B5CF6',
-    figure: '3B82F6',
-    anime: 'EC4899',
-    manga: '10B981',
-    card: 'F59E0B',
-    plush: 'EF4444',
-    merch: '6366F1'
-  };
-  return colors[category] || '8B5CF6';
-}
-
-// Global functions for onclick handlers
+// ===== Window 객체에 함수 할당 (필수) =====
 window.showLoginModal = showLoginModal;
 window.showSellModal = showSellModal;
+window.closeModal = closeModal;
 window.switchToSignup = switchToSignup;
 window.switchToLogin = switchToLogin;
-window.closeModal = closeModal;
 window.handleLogin = handleLogin;
 window.handleSignup = handleSignup;
-window.handleLogout = handleLogout;
 window.handleSocialLogin = handleSocialLogin;
+window.handleLogout = handleLogout;
 window.handleSellProduct = handleSellProduct;
 window.handleDeleteProduct = handleDeleteProduct;
-window.showEditModal = showEditModal;
-window.handleEditProduct = handleEditProduct;
 window.showProductDetail = showProductDetail;
 window.toggleFavorite = toggleFavorite;
 window.performSearch = performSearch;
-window.toggleTheme = toggleTheme;
 window.toggleDropdown = toggleDropdown;
 window.closeDropdown = closeDropdown;
 window.viewMyProfile = viewMyProfile;
 window.viewMyListings = viewMyListings;
 window.viewFavorites = viewFavorites;
+window.toggleTheme = toggleTheme;
+window.showEditModal = showEditModal;
+window.handleEditProduct = handleEditProduct;
 
-// Add fadeOut animation to CSS dynamically
+// CSS 추가
 const style = document.createElement('style');
 style.textContent = `
-  @keyframes fadeOut {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-20px); }
-  }
+  @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
 `;
 document.head.appendChild(style);
-
-console.log('🚀 오타쿠 마켓 (Firebase 버전) 초기화 완료!');
