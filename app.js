@@ -940,6 +940,8 @@ function viewFavorites() {
 
   const sectionTitle = document.querySelector('.section-title');
   if (sectionTitle) sectionTitle.textContent = '찜한 상품 목록';
+
+  showNotification('필터 적용', `${currentProducts.length}개의 상품을 찾았습니다.`);
   updateMobileBanner('favorites');
 }
 
