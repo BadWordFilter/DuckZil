@@ -700,6 +700,30 @@
     </div>
   </div>
 
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav">
+    <div class="mobile-nav-item active" data-tab="home" onclick="switchTab('home')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label">홈</div>
+    </div>
+    <div class="mobile-nav-item" data-tab="community" onclick="switchTab('community')">
+      <div class="nav-icon">💬</div>
+      <div class="nav-label">커뮤니티</div>
+    </div>
+    <div class="mobile-nav-item sell-btn-item" onclick="showSellModal()">
+      <div class="mobile-sell-btn">+</div>
+      <div class="nav-label">판매</div>
+    </div>
+    <div class="mobile-nav-item" data-tab="favorites" onclick="viewFavorites()">
+      <div class="nav-icon">❤️</div>
+      <div class="nav-label">찜</div>
+    </div>
+    <div class="mobile-nav-item" data-tab="profile" onclick="viewMyProfile()">
+      <div class="nav-icon">👤</div>
+      <div class="nav-label">MY</div>
+    </div>
+  </nav>
+
   <div id="notificationContainer"></div>
   <!-- Firebase & App Logic -->
   <script type="module" src="app.js"></script>

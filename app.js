@@ -806,8 +806,14 @@ function showGuide() {
 
 // 마이페이지 관련 기능
 function viewMyProfile() {
+  const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+  mobileNavItems.forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-tab') === 'profile');
+  });
+
   if (!currentUser) {
     showNotification('로그인 필요', '로그인이 필요합니다.', 'error');
+    showLoginModal();
     return;
   }
 
@@ -846,6 +852,17 @@ function viewMyListings() {
 }
 
 function viewFavorites() {
+  const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+  mobileNavItems.forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-tab') === 'favorites');
+  });
+
+  if (!currentUser) {
+    showNotification('로그인 필요', '찜한 상품을 보려면 로그인이 필요합니다.', 'error');
+    showLoginModal();
+    return;
+  }
+
   if (favorites.size === 0) {
     showNotification('알림', '찜한 상품이 없습니다.', 'info');
     closeDropdown();
@@ -866,6 +883,12 @@ function switchTab(tab) {
   const communitySection = document.getElementById('communitySection');
   const headerCommunityBtn = document.getElementById('headerCommunityBtn');
   const navItems = document.querySelectorAll('.nav-item');
+  const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+
+  // Update Mobile Bottom Nav Active State
+  mobileNavItems.forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-tab') === tab);
+  });
 
   if (tab === 'community') {
     if (marketplaceSection) marketplaceSection.style.display = 'none';
@@ -879,6 +902,7 @@ function switchTab(tab) {
     }
     navItems.forEach(nav => nav.classList.remove('active'));
     renderCommunity();
+    window.scrollTo(0, 0);
   } else {
     if (marketplaceSection) marketplaceSection.style.display = 'block';
     if (communitySection) communitySection.style.display = 'none';
@@ -895,6 +919,7 @@ function switchTab(tab) {
       navItems.forEach(nav => nav.classList.toggle('active', nav.getAttribute('data-category') === 'all'));
     }
     renderProducts(currentProducts);
+    window.scrollTo(0, 0);
   }
 }
 
