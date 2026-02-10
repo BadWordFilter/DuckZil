@@ -335,6 +335,7 @@ async function handleSellProduct(event) {
   const price = parseInt(document.getElementById('sellPrice').value);
   const condition = document.getElementById('sellCondition').value;
   const description = document.getElementById('sellDescription').value;
+  const region = document.getElementById('sellRegion').value;
 
   const categoryNames = {
     game: '게임',
@@ -353,6 +354,26 @@ async function handleSellProduct(event) {
     'fair': '사용감 있음'
   };
 
+  const regionNames = {
+    seoul: '서울',
+    gyeonggi: '경기',
+    incheon: '인천',
+    busan: '부산',
+    daegu: '대구',
+    gwangju: '광주',
+    daejeon: '대전',
+    ulsan: '울산',
+    sejong: '세종',
+    gangwon: '강원',
+    chungbuk: '충북',
+    chungnam: '충남',
+    jeonbuk: '전북',
+    jeonnam: '전남',
+    gyeongbuk: '경북',
+    gyeongnam: '경남',
+    jeju: '제주'
+  };
+
   try {
     await addDoc(collection(db, 'products'), {
       title,
@@ -361,8 +382,8 @@ async function handleSellProduct(event) {
       price,
       condition,
       conditionName: conditionNames[condition],
-      location: '서울', // 나중에 사용자 정보에서 가져올 수 있음
-      region: 'seoul',
+      location: regionNames[region] || '서울',
+      region: region || 'seoul',
       image: 'placeholder.jpg',
       seller: currentUser.nickname,
       sellerEmail: currentUser.email,
