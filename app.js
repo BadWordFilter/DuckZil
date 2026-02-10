@@ -23,8 +23,8 @@ import {
 let products = [];
 let currentProducts = [];
 let communityPosts = [];
-let favorites = new Set();
-let communityFavorites = new Set();
+let favorites = new Set(JSON.parse(localStorage.getItem('favorites')) || []);
+let communityFavorites = new Set(JSON.parse(localStorage.getItem('communityFavorites')) || []);
 let currentUser = null;
 let activeTab = 'home'; // 'home' or 'community'
 
@@ -363,6 +363,7 @@ async function togglePostLike(postId) {
     communityFavorites.add(postId);
     await updateDoc(doc(db, 'communityPosts', postId), { likes: (post.likes || 0) + 1 });
   }
+  localStorage.setItem('communityFavorites', JSON.stringify(Array.from(communityFavorites)));
 }
 
 function renderCommunity() {
@@ -513,14 +514,26 @@ function showNotification(title, message, type = 'success') {
   if (!container) return;
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
+  notification.style.cursor = 'pointer'; // 클릭 가능함을 시각적으로 알림
   notification.innerHTML = `
     <div class="notification-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</div>
     <div class="notification-content"><div class="notification-title">${title}</div><div class="notification-message">${message}</div></div>
   `;
+
+  // 클릭 시 즉시 삭제
+  notification.onclick = () => {
+    notification.style.animation = 'fadeOut 0.3s ease forwards';
+    setTimeout(() => notification.remove(), 300);
+  };
+
   container.appendChild(notification);
+
+  // 3초 후 자동 삭제 (이미 클릭해서 삭제되지 않은 경우에만)
   setTimeout(() => {
-    notification.style.animation = 'fadeOut 0.5s ease forwards';
-    setTimeout(() => notification.remove(), 500);
+    if (notification.parentElement) {
+      notification.style.animation = 'fadeOut 0.5s ease forwards';
+      setTimeout(() => notification.remove(), 500);
+    }
   }, 3000);
 }
 
@@ -735,6 +748,7 @@ function applyFilters() {
 function toggleFavorite(productId) {
   if (favorites.has(productId)) favorites.delete(productId);
   else favorites.add(productId);
+  localStorage.setItem('favorites', JSON.stringify(Array.from(favorites)));
   renderProducts(currentProducts);
 }
 
