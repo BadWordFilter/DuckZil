@@ -272,8 +272,8 @@ async function loadProducts() {
     const totalProducts = products.length;
     animateValue("statProducts", 0, totalProducts, 1000);
 
-    // 통계 업데이트 (거래 완료 - 시뮬레이션: 상품 수 * 1.8 + 기본값)
-    const totalTrades = Math.floor(totalProducts * 1.8) + 24;
+    // 통계 업데이트 (거래 완료 - 현재 구매 기능 미구현으로 0 처리)
+    const totalTrades = 0;
     animateValue("statTrades", 0, totalTrades, 1000);
 
     console.log('✅ 상품 로드됨:', products.length, '개');
