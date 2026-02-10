@@ -70,6 +70,7 @@ let currentUser = null;
 document.addEventListener('DOMContentLoaded', () => {
   initializeAuth();
   loadProducts();
+  loadUserStats();
   setupEventListeners();
 });
 
@@ -266,8 +267,47 @@ async function loadProducts() {
 
     currentProducts = [...products];
     renderProducts(currentProducts);
+
+    // 통계 업데이트 (상품 수)
+    const totalProducts = products.length;
+    animateValue("statProducts", 0, totalProducts, 1000);
+
+    // 통계 업데이트 (거래 완료 - 시뮬레이션: 상품 수 * 1.8 + 기본값)
+    const totalTrades = Math.floor(totalProducts * 1.8) + 24;
+    animateValue("statTrades", 0, totalTrades, 1000);
+
     console.log('✅ 상품 로드됨:', products.length, '개');
   });
+}
+
+function loadUserStats() {
+  const usersRef = collection(db, 'users');
+  onSnapshot(usersRef, (snapshot) => {
+    const totalUsers = snapshot.size;
+    animateValue("statUsers", 0, totalUsers, 1000);
+  });
+}
+
+function animateValue(id, start, end, duration) {
+  const obj = document.getElementById(id);
+  if (!obj) return;
+
+  // 숫자가 0이면 애니메이션 없이 바로 표시
+  if (end === 0) {
+    obj.innerHTML = "0";
+    return;
+  }
+
+  let startTimestamp = null;
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+    obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
+    }
+  };
+  window.requestAnimationFrame(step);
 }
 
 async function handleSellProduct(event) {
