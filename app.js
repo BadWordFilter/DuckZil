@@ -658,6 +658,10 @@ function filterByCategory(category) {
   applyFilters();
 }
 
+function showGuide() {
+  document.getElementById('guideModal').classList.add('active');
+}
+
 // 마이페이지 관련 기능
 function viewMyProfile() {
   if (!currentUser) {
@@ -738,6 +742,7 @@ window.toggleTheme = toggleTheme;
 window.showEditModal = showEditModal;
 window.handleEditProduct = handleEditProduct;
 window.resetFilters = resetFilters;
+window.showGuide = showGuide;
 
 // CSS 추가
 const style = document.createElement('style');

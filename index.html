@@ -170,7 +170,7 @@
 
       <div class="footer-section">
         <div class="footer-title">서비스</div>
-        <a href="#" class="footer-link">이용방법</a>
+        <a href="javascript:void(0)" class="footer-link" onclick="showGuide()">이용방법</a>
         <a href="#" class="footer-link">안전거래 가이드</a>
         <a href="#" class="footer-link">수수료 안내</a>
         <a href="#" class="footer-link">FAQ</a>
@@ -589,6 +589,68 @@
 
       <button class="btn btn-primary" style="width: 100%; padding: 14px;"
         onclick="closeModal('profileModal')">닫기</button>
+    </div>
+  </div>
+
+  <!-- Guide Modal -->
+  <div class="modal" id="guideModal">
+    <div class="modal-content" style="max-width: 600px; padding: 40px; border-radius: 30px;">
+      <button class="modal-close" onclick="closeModal('guideModal')">×</button>
+      <div class="modal-body" style="text-align: left;">
+        <h2
+          style="font-family: 'Poppins', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 8px; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          이용방법 안내</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 32px;">오타쿠 마켓을 처음 이용하시나요? 활발한 덕질을 위한 가이드를 확인하세요!</p>
+
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          <div style="display: flex; gap: 20px;">
+            <div
+              style="width: 48px; height: 48px; border-radius: 16px; background: rgba(99, 102, 241, 0.1); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+              🔍</div>
+            <div>
+              <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">1. 상품 찾기</h3>
+              <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">카테고리 필터와 검색 기능을 통해 원하는 한정판 굿즈나
+                게임을 찾아보세요.</p>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 20px;">
+            <div
+              style="width: 48px; height: 48px; border-radius: 16px; background: rgba(168, 85, 247, 0.1); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+              ✍️</div>
+            <div>
+              <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">2. 상품 등록</h3>
+              <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">'판매하기' 버튼을 눌러 소장 중인 아이템의 사진과
+                설명을 올리고 새 주인을 찾아주세요.</p>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 20px;">
+            <div
+              style="width: 48px; height: 48px; border-radius: 16px; background: rgba(236, 72, 153, 0.1); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+              💬</div>
+            <div>
+              <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">3. 채팅 및 거래</h3>
+              <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">마음에 드는 상품이 있다면 판매자와 채팅을 통해 상세
+                조율 후, 직거래나 택배로 안전하게 거래하세요.</p>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 20px;">
+            <div
+              style="width: 48px; height: 48px; border-radius: 16px; background: rgba(34, 197, 94, 0.1); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+              🛡️</div>
+            <div>
+              <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">4. 매너 거래</h3>
+              <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">상호 존중하는 매너 거래로 매너 온도를 높여 신뢰받는
+                컬렉터가 되어보세요!</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; margin-top: 40px; padding: 16px;"
+          onclick="closeModal('guideModal')">알겠어요!</button>
+      </div>
     </div>
   </div>
 
