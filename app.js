@@ -16,7 +16,8 @@ import {
   onSnapshot,
   updateDoc,
   doc,
-  where
+  where,
+  deleteDoc
 } from './firebase-config.js';
 
 // Sample Product Data (초기 데이터 - Firebase에 한번만 업로드)
