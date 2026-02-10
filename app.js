@@ -16,7 +16,8 @@ import {
   updateDoc,
   doc,
   where,
-  deleteDoc
+  deleteDoc,
+  updateProfile
 } from "./firebase-config.js";
 
 // ===== 전역 변수 =====
@@ -895,6 +896,58 @@ function viewMyProfile() {
   closeDropdown();
 }
 
+function showEditProfileModal() {
+  if (!currentUser) return;
+  document.getElementById('editNickname').value = currentUser.nickname;
+  const preview = document.getElementById('profileEditPreview');
+  if (currentUser.photoURL) {
+    preview.innerHTML = `<img src="${currentUser.photoURL}" alt="preview" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+  } else {
+    preview.textContent = currentUser.nickname.charAt(0);
+  }
+  closeModal('profileModal');
+  document.getElementById('editProfileModal').classList.add('active');
+}
+
+async function handleUpdateProfile(event) {
+  event.preventDefault();
+  const newNickname = document.getElementById('editNickname').value;
+  const previewImg = document.querySelector('#profileEditPreview img');
+  const newPhotoURL = previewImg ? previewImg.src : currentUser.photoURL;
+
+  try {
+    // 1. Firebase Auth 프로필 업데이트
+    await updateProfile(auth.currentUser, {
+      displayName: newNickname,
+      photoURL: newPhotoURL
+    });
+
+    // 2. Firestore 유저 문서 업데이트
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('uid', '==', currentUser.uid));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const userDoc = querySnapshot.docs[0];
+      await updateDoc(doc(db, 'users', userDoc.id), {
+        nickname: newNickname,
+        photoURL: newPhotoURL
+      });
+    }
+
+    // 3. 현재 로컬 상태 업데이트
+    currentUser.nickname = newNickname;
+    currentUser.photoURL = newPhotoURL;
+
+    closeModal('editProfileModal');
+    updateHeaderForUser();
+    showNotification('성공', '프로필이 업데이트되었습니다.');
+  } catch (error) {
+    console.error('프로필 업데이트 오류:', error);
+    showNotification('실패', '프로필 업데이트 중 오류가 발생했습니다.', 'error');
+  }
+}
+
 function viewMyListings() {
   if (!currentUser) {
     showNotification('로그인 필요', '로그인이 필요합니다.', 'error');
@@ -953,12 +1006,16 @@ function handleImagePreview(input, previewId) {
   if (input.files && input.files[0]) {
     const reader = new FileReader();
     reader.onload = function (e) {
-      container.innerHTML = `
-        <div class="preview-item">
-          <img src="${e.target.result}" alt="preview">
-          <button type="button" class="remove-img-btn" onclick="removeImage('${previewId}')">×</button>
-        </div>
-      `;
+      if (previewId === 'profileEditPreview') {
+        container.innerHTML = `<img src="${e.target.result}" alt="preview" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+      } else {
+        container.innerHTML = `
+          <div class="preview-item">
+            <img src="${e.target.result}" alt="preview">
+            <button type="button" class="remove-img-btn" onclick="removeImage('${previewId}')">×</button>
+          </div>
+        `;
+      }
     };
     reader.readAsDataURL(input.files[0]);
   }
@@ -1083,6 +1140,8 @@ window.showCommunityWriteModal = showCommunityWriteModal;
 window.handlePostCommunity = handlePostCommunity;
 window.togglePostLike = togglePostLike;
 window.switchTab = switchTab;
+window.showEditProfileModal = showEditProfileModal;
+window.handleUpdateProfile = handleUpdateProfile;
 
 // CSS 추가
 const style = document.createElement('style');
