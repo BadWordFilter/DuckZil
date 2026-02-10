@@ -235,6 +235,112 @@ body::before {
     align-items: center;
 }
 
+/* User Profile & Dropdown */
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: var(--radius-lg);
+    transition: var(--transition-normal);
+    position: relative;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--glass-border);
+}
+
+.user-profile:hover {
+    background: var(--bg-elevated);
+    box-shadow: var(--shadow-sm);
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    font-size: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-nickname {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.user-level {
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 220px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-sm);
+    display: none;
+    flex-direction: column;
+    z-index: 1001;
+    backdrop-filter: blur(20px);
+}
+
+.dropdown-menu.show {
+    display: flex;
+    animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-item {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.dropdown-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--primary);
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--glass-border);
+    margin: var(--spacing-sm) 0;
+}
+
 .btn {
     padding: 12px 24px;
     border-radius: var(--radius-lg);
