@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadUserStats(); // 유저 통계 (가입자 수 등)
   setupEventListeners();
   updateThemeIcon();
+  updateMobileBanner('home'); // 초기 배너 설정
 
   console.log('🚀 오타쿠 마켓 초기화 완료');
 });
@@ -849,6 +850,7 @@ function viewMyListings() {
   } else {
     showNotification('필터 적용', `${currentProducts.length}개의 상품을 찾았습니다.`);
   }
+  updateMobileBanner('listings');
 }
 
 function viewFavorites() {
@@ -875,6 +877,7 @@ function viewFavorites() {
 
   const sectionTitle = document.querySelector('.section-title');
   if (sectionTitle) sectionTitle.textContent = '찜한 상품 목록';
+  updateMobileBanner('favorites');
 }
 
 function switchTab(tab) {
@@ -902,6 +905,7 @@ function switchTab(tab) {
     }
     navItems.forEach(nav => nav.classList.remove('active'));
     renderCommunity();
+    updateMobileBanner('community');
     window.scrollTo(0, 0);
   } else {
     if (marketplaceSection) marketplaceSection.style.display = 'block';
@@ -917,9 +921,45 @@ function switchTab(tab) {
     // '전체' 탭 활성화 (홈으로 돌아올 때)
     if (tab === 'home') {
       navItems.forEach(nav => nav.classList.toggle('active', nav.getAttribute('data-category') === 'all'));
+      updateMobileBanner('home');
     }
     renderProducts(currentProducts);
     window.scrollTo(0, 0);
+  }
+}
+
+function updateMobileBanner(view) {
+  const banner = document.getElementById('mobilePageBanner');
+  const hero = document.getElementById('heroSection');
+  const icon = document.getElementById('bannerIcon');
+  const title = document.getElementById('bannerTitle');
+  const desc = document.getElementById('bannerDesc');
+  const filters = document.querySelector('.filter-section');
+
+  if (!banner) return;
+
+  const views = {
+    home: { icon: '🏠', title: '마켓 홈', desc: '새로운 굿즈를 찾아보세요', showHero: true, showFilters: true },
+    community: { icon: '💬', title: '커뮤니티', desc: '다른 덕후들과 소통하세요', showHero: false, showFilters: false },
+    listings: { icon: '📦', title: '내 판매 상품', desc: '등록한 상품들을 관리하세요', showHero: false, showFilters: false },
+    favorites: { icon: '❤️', title: '찜한 상품', desc: '마음에 들었던 아이템들입니다', showHero: false, showFilters: false }
+  };
+
+  const config = views[view] || views.home;
+
+  icon.textContent = config.icon;
+  title.textContent = config.title;
+  desc.textContent = config.desc;
+
+  // 모바일 전용 클래스 토글
+  banner.className = `mobile-page-banner view-${view}`;
+
+  if (window.innerWidth <= 768) {
+    if (hero) hero.style.display = config.showHero ? 'block' : 'none';
+    if (filters) filters.style.display = config.showFilters ? 'block' : 'none';
+  } else {
+    if (hero) hero.style.display = 'block';
+    if (filters) filters.style.display = 'block';
   }
 }
 
