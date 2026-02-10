@@ -863,6 +863,7 @@ body::before {
     }
 }
 
+/* Hidden Scrollbar while allowing scroll */
 .modal-content {
     background: var(--bg-secondary);
     border-radius: var(--radius-xl);
@@ -873,23 +874,15 @@ body::before {
     overflow-y: auto;
     position: relative;
     animation: slideUp 0.3s ease;
-    scrollbar-gutter: stable;
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }
 
-/* Modal Specific Scrollbar */
 .modal-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-.modal-content::-webkit-scrollbar-track {
-    background: transparent;
-    margin: 10px 0;
-}
-
-.modal-content::-webkit-scrollbar-thumb {
-    background-color: var(--primary);
-    border-radius: 10px;
-    border: 2px solid var(--bg-secondary);
+    display: none;
+    /* Chrome, Safari, Opera */
 }
 
 @keyframes slideUp {
@@ -1101,23 +1094,14 @@ body::before {
     }
 }
 
-/* Scrollbar */
+/* Global Scrollbar Hidden */
 ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    display: none;
 }
 
-::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-dark);
+* {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 /* Loading Animation */
