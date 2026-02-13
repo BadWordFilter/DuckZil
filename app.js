@@ -29,6 +29,9 @@ let favorites = new Set(JSON.parse(localStorage.getItem('favorites')) || []);
 let communityFavorites = new Set(JSON.parse(localStorage.getItem('communityFavorites')) || []);
 let currentUser = null;
 let activeTab = 'home'; // 'home' or 'community'
+let currentChatId = null;
+let chatMessagesListener = null;
+let chatListListener = null;
 
 // ===== 초기화 =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -96,6 +99,9 @@ function updateHeaderForUser() {
           </div>
           <div class="dropdown-item" onclick="event.stopPropagation(); viewMyListings()">
             <span>📦</span> 내 판매 상품
+          </div>
+          <div class="dropdown-item" onclick="event.stopPropagation(); showChatList()">
+            <span>💬</span> 내 채팅 목록
           </div>
           <div class="dropdown-item" onclick="event.stopPropagation(); viewFavorites()">
             <span>❤️</span> 찜한 상품
@@ -615,7 +621,7 @@ function renderProducts(productsToRender) {
           <div class="product-meta">👁️ ${product.views || 0} · ❤️ ${product.likes || 0}</div>
         </div>
       </div>
-      ${product.status === 'sold' ? '<div class="sold-overlay"><span>판매 완료</span></div>' : ''}
+      ${product.status === 'sold' ? '<div class="sold-overlay"><span>판매 완료</span></div>' : product.status === 'reserved' ? '<div class="sold-overlay" style="background: rgba(245, 158, 11, 0.7);"><span>예약 중</span></div>' : ''}
     </div>
   `).join('');
 }
@@ -648,13 +654,20 @@ function showProductDetail(productId) {
   const modalActions = document.querySelector('#productModal .modal-actions');
 
   if (currentUser && (currentUser.uid === product.sellerUID || currentUser.email === product.sellerEmail)) {
-    const statusBtnLabel = product.status === 'sold' ? '🔄 다시 판매하기' : '✅ 판매 완료로 변경';
+    const statusBtnLabel = product.status === 'sold' ? '🔄 다시 판매하기' : '✅ 판매 완료';
     const nextStatus = product.status === 'sold' ? 'selling' : 'sold';
     const statusBtnColor = product.status === 'sold' ? 'var(--secondary)' : 'var(--success)';
 
+    const reserveBtnLabel = product.status === 'reserved' ? '🔄 예약 취소' : '📅 예약 중으로 변경';
+    const nextReserveStatus = product.status === 'reserved' ? 'selling' : 'reserved';
+    const reserveBtnColor = product.status === 'reserved' ? 'var(--secondary)' : '#f59e0b';
+
     modalActions.innerHTML = `
       <div style="flex-direction: column; gap: 8px; width: 100%; display: flex;">
-        <button class="btn btn-primary btn-large" style="background-color: ${statusBtnColor};" onclick="updateProductStatus('${product.id}', '${nextStatus}')">${statusBtnLabel}</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary btn-large" style="background-color: ${statusBtnColor}; flex: 1;" onclick="updateProductStatus('${product.id}', '${nextStatus}')">${statusBtnLabel}</button>
+          <button class="btn btn-primary btn-large" style="background-color: ${reserveBtnColor}; flex: 1;" onclick="updateProductStatus('${product.id}', '${nextReserveStatus}')">${reserveBtnLabel}</button>
+        </div>
         <div style="display: flex; gap: 8px;">
           <button class="btn btn-secondary btn-large" style="background-color: #ef4444; color: white; border: none; flex: 1;" onclick="handleDeleteProduct('${product.id}')">🗑️ 삭제</button>
           <button class="btn btn-primary btn-large" style="flex: 1;" onclick="showEditModal('${product.id}')">✏️ 수정</button>
@@ -665,8 +678,8 @@ function showProductDetail(productId) {
   } else {
     modalActions.innerHTML = `
       <div style="display: flex; gap: 8px; width: 100%;">
-        <button class="btn btn-secondary btn-large" style="flex: 1;" ${product.status === 'sold' ? 'disabled' : ''} onclick="showNotification('준비 중', '채팅 기능은 준비 중입니다.', 'info')">💬 채팅하기</button>
-        <button class="btn btn-primary btn-large" style="flex: 1;" ${product.status === 'sold' ? 'disabled' : ''} onclick="showNotification('준비 중', '결제 기능은 준비 중입니다.', 'info')">${product.status === 'sold' ? '품절' : '💰 구매하기'}</button>
+        <button class="btn btn-secondary btn-large" style="flex: 1;" ${product.status === 'sold' ? 'disabled' : ''} onclick="startChat('${product.id}', '${product.sellerUID}', '${product.seller}')">💬 채팅하기</button>
+        <button class="btn btn-primary btn-large" style="flex: 1;" ${product.status === 'sold' ? 'disabled' : ''} onclick="handlePurchaseProduct('${product.id}')">${product.status === 'sold' ? '품절' : '💰 구매하기'}</button>
       </div>
     `;
   }
@@ -832,6 +845,14 @@ function setupEventListeners() {
   // 가격 입력 시 실시간 필터
   document.getElementById('minPrice').addEventListener('input', applyFilters);
   document.getElementById('maxPrice').addEventListener('input', applyFilters);
+
+  // 채팅 입력창 엔터키
+  const chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') sendMessage();
+    });
+  }
 }
 
 function resetFilters() {
@@ -1138,6 +1159,241 @@ function updateMobileBanner(view) {
   }
 }
 
+// ===== 구매 및 예약 기능 =====
+async function handlePurchaseProduct(productId) {
+  if (!currentUser) {
+    showNotification('로그인 필요', '구매하려면 로그인이 필요합니다.', 'error');
+    showLoginModal();
+    return;
+  }
+
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+
+  if (product.status === 'sold') {
+    showNotification('알림', '이미 판매된 상품입니다.', 'info');
+    return;
+  }
+
+  if (!confirm(`'${product.title}' 상품을 구매하시겠습니까?`)) return;
+
+  try {
+    // 상품 상태 업데이트
+    await updateDoc(doc(db, 'products', productId), {
+      status: 'sold',
+      buyerUID: currentUser.uid,
+      buyerNickname: currentUser.nickname,
+      soldAt: new Date()
+    });
+
+    // 구매 내역 추가
+    await addDoc(collection(db, 'purchases'), {
+      productId: productId,
+      productTitle: product.title,
+      price: product.price,
+      sellerUID: product.sellerUID,
+      sellerNickname: product.seller,
+      buyerUID: currentUser.uid,
+      buyerNickname: currentUser.nickname,
+      createdAt: new Date()
+    });
+
+    closeModal('productModal');
+    showNotification('구매 성공!', '상품 구매가 완료되었습니다. 판매자와 채팅으로 상세 내용을 조율하세요!');
+  } catch (error) {
+    console.error('구매 오류:', error);
+    showNotification('구매 실패', '오류가 발생했습니다.', 'error');
+  }
+}
+
+// ===== 채팅 기능 =====
+async function startChat(productId, sellerUID, sellerNickname) {
+  if (!currentUser) {
+    showNotification('로그인 필요', '채팅하려면 로그인이 필요합니다.', 'error');
+    showLoginModal();
+    return;
+  }
+
+  if (currentUser.uid === sellerUID) {
+    showNotification('알림', '자신의 상품에는 채팅할 수 없습니다.', 'info');
+    return;
+  }
+
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+
+  // 기존 채팅방 확인
+  const chatsRef = collection(db, 'chats');
+  const q = query(chatsRef,
+    where('productId', '==', productId),
+    where('participants', 'array-contains', currentUser.uid)
+  );
+
+  const querySnapshot = await getDocs(q);
+  let chatId;
+
+  if (querySnapshot.empty) {
+    // 새 채팅방 생성
+    const docRef = await addDoc(collection(db, 'chats'), {
+      productId: productId,
+      productTitle: product.title,
+      productImage: product.image,
+      sellerUID: sellerUID,
+      sellerNickname: sellerNickname,
+      buyerUID: currentUser.uid,
+      buyerNickname: currentUser.nickname,
+      participants: [currentUser.uid, sellerUID],
+      lastMessage: '',
+      updatedAt: new Date()
+    });
+    chatId = docRef.id;
+  } else {
+    chatId = querySnapshot.docs[0].id;
+  }
+
+  openChat(chatId, sellerNickname, product);
+}
+
+function openChat(chatId, withNickname, product) {
+  currentChatId = chatId;
+  const chatWithUserEl = document.getElementById('chatWithUser');
+  const chatProductInfoEl = document.getElementById('chatProductInfo');
+
+  if (chatWithUserEl) chatWithUserEl.textContent = withNickname;
+  if (chatProductInfoEl) {
+    chatProductInfoEl.innerHTML = `
+      <img src="${product.image}" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
+      <span>${product.title}</span>
+    `;
+  }
+
+  closeModal('productModal');
+  closeModal('chatListModal');
+  const chatModal = document.getElementById('chatModal');
+  if (chatModal) chatModal.classList.add('active');
+
+  loadChatMessages(chatId);
+}
+
+function loadChatMessages(chatId) {
+  if (chatMessagesListener) chatMessagesListener(); // 이전 리스너 해제
+
+  const messagesRef = collection(db, 'chats', chatId, 'messages');
+  const q = query(messagesRef, orderBy('createdAt', 'asc'));
+
+  chatMessagesListener = onSnapshot(q, (snapshot) => {
+    const messages = [];
+    snapshot.forEach((doc) => {
+      messages.push({ id: doc.id, ...doc.data() });
+    });
+    renderMessages(messages);
+  });
+}
+
+function renderMessages(messages) {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+
+  container.innerHTML = messages.map(msg => {
+    const isMine = msg.senderUID === currentUser.uid;
+    const time = msg.createdAt?.seconds
+      ? new Date(msg.createdAt.seconds * 1000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    return `
+      <div style="display: flex; flex-direction: column; align-items: ${isMine ? 'flex-end' : 'flex-start'}; gap: 4px; margin-bottom: 8px;">
+        <div style="background: ${isMine ? 'var(--primary)' : 'var(--surface-color)'}; color: ${isMine ? 'white' : 'var(--text-primary)'}; padding: 10px 14px; border-radius: ${isMine ? '18px 18px 0 18px' : '18px 18px 18px 0'}; max-width: 80%; font-size: 14px; box-shadow: var(--shadow-sm); border: ${isMine ? 'none' : '1px solid var(--glass-border)'};">
+          ${msg.text}
+        </div>
+        <span style="font-size: 10px; color: var(--text-tertiary);">${time}</span>
+      </div>
+    `;
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || !currentChatId) return;
+
+  try {
+    await addDoc(collection(db, 'chats', currentChatId, 'messages'), {
+      text: text,
+      senderUID: currentUser.uid,
+      senderNickname: currentUser.nickname,
+      createdAt: new Date()
+    });
+
+    await updateDoc(doc(db, 'chats', currentChatId), {
+      lastMessage: text,
+      updatedAt: new Date()
+    });
+
+    input.value = '';
+  } catch (error) {
+    console.error('메시지 전송 오류:', error);
+  }
+}
+
+async function showChatList() {
+  if (!currentUser) {
+    showNotification('로그인 필요', '로그인이 필요합니다.', 'error');
+    showLoginModal();
+    return;
+  }
+
+  const chatListModal = document.getElementById('chatListModal');
+  if (chatListModal) chatListModal.classList.add('active');
+  closeDropdown();
+
+  const chatsRef = collection(db, 'chats');
+  // participants에 현재 유저가 포함된 채팅방 가져오기
+  const q = query(chatsRef, where('participants', 'array-contains', currentUser.uid), orderBy('updatedAt', 'desc'));
+
+  if (chatListListener) chatListListener();
+
+  chatListListener = onSnapshot(q, (snapshot) => {
+    const chats = [];
+    snapshot.forEach((doc) => {
+      chats.push({ id: doc.id, ...doc.data() });
+    });
+    renderChatList(chats);
+  });
+}
+
+function renderChatList(chats) {
+  const container = document.getElementById('chatList');
+  if (!container) return;
+
+  if (chats.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">채팅 내역이 없습니다.</div>`;
+    return;
+  }
+
+  container.innerHTML = chats.map(chat => {
+    const withNickname = chat.sellerUID === currentUser.uid ? chat.buyerNickname : chat.sellerNickname;
+    return `
+      <div class="chat-list-item" onclick="openChatFromList('${chat.id}', '${withNickname}', '${chat.productId}')" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.2s; border: 1px solid var(--glass-border); background: var(--surface-color); margin-bottom: 8px;">
+        <img src="${chat.productImage}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;" onerror="this.src='placeholder.jpg'">
+        <div style="flex: 1; overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+            <span style="font-weight: 700; font-size: 15px;">${withNickname}</span>
+            <span style="font-size: 11px; color: var(--text-tertiary);">${chat.updatedAt?.seconds ? new Date(chat.updatedAt.seconds * 1000).toLocaleDateString('ko-KR') : ''}</span>
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${chat.lastMessage || '대화가 없습니다.'}</div>
+          <div style="font-size: 11px; color: var(--primary-light); margin-top: 4px; font-weight: 500;">${chat.productTitle}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openChatFromList(chatId, withNickname, productId) {
+  const product = products.find(p => p.id === productId) || { title: '알 수 없는 상품', image: 'placeholder.jpg' };
+  openChat(chatId, withNickname, product);
+}
+
 // ===== Window 객체에 함수 할당 (필수) =====
 window.showLoginModal = showLoginModal;
 window.showSellModal = showSellModal;
@@ -1169,10 +1425,18 @@ window.togglePostLike = togglePostLike;
 window.switchTab = switchTab;
 window.showEditProfileModal = showEditProfileModal;
 window.handleUpdateProfile = handleUpdateProfile;
+window.handlePurchaseProduct = handlePurchaseProduct;
+window.startChat = startChat;
+window.sendMessage = sendMessage;
+window.showChatList = showChatList;
+window.openChatFromList = openChatFromList;
 
 // CSS 추가
 const style = document.createElement('style');
 style.textContent = `
   @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+  .chat-list-item:hover { background: var(--bg-secondary) !important; border-color: var(--primary) !important; }
+  #chatMessages::-webkit-scrollbar { width: 6px; }
+  #chatMessages::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
 `;
 document.head.appendChild(style);
