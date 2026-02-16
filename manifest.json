@@ -1,0 +1,17 @@
+{
+  "name": "덕질 (DuckZil)",
+  "short_name": "덕질",
+  "description": "귀여운 오리 마스코트와 함께하는 고품격 굿즈 거래 플랫폼",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fffbeb",
+  "theme_color": "#ffb800",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3590/3590390.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

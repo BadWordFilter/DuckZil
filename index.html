@@ -4,32 +4,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="오타쿠 마켓 - 당장 내 아이템을 팔고 새로운 굿즈를 득템하세요! 게임, 애니 피규어, 만화책, 중고 카드 전문 거래 플랫폼.">
-  <meta name="keywords" content="오타쿠마켓, 중고나라, 번개장터, 피규어거래, 게임중고, 애니굿즈, 만화책, TCG, 덕질">
-  <meta name="author" content="Otaku Market Team">
+  <meta name="description" content="덕질 - 당신의 소중한 굿즈를 거래하는 가장 귀여운 성지! 게임, 애니 피규어, 만화책, 중고 카드 전문 거래 플랫폼.">
+  <meta name="keywords" content="덕질, 굿즈거래, 번개장터, 피규어거래, 게임중고, 애니굿즈, 만화책, TCG, 덕후">
+  <meta name="author" content="DuckZil Team">
 
   <!-- Open Graph / Facebook / KakaoTalk -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://badwordfilter.github.io/otaku-market/"> <!-- 추후 실제 도메인으로 변경 필요 -->
-  <meta property="og:title" content="오타쿠 마켓 | 게임·애니·피규어 전문 거래">
-  <meta property="og:description" content="진정한 덕후들을 위한 안전한 성지! 게임, 피규어, 굿즈 거래는 오타쿠 마켓에서.">
-  <meta property="og:image" content="https://otaku-market.example.com/og-image.jpg"> <!-- 대표 이미지 설정 필요 -->
+  <meta property="og:url" content="https://duckzil.example.com/">
+  <meta property="og:title" content="덕질 | 덕후들의 귀여운 굿즈 성지">
+  <meta property="og:description" content="진정한 덕후들을 위한 오리(Duck)들의 성지! 게임, 피규어, 굿즈 거래는 덕질에서.">
+  <meta property="og:image" content="https://duckzil.example.com/og-image.jpg">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:title" content="오타쿠 마켓 | 덕후들의 중고 장터">
+  <meta property="twitter:title" content="덕질 | 최고의 굿즈 거래 플랫폼">
   <meta property="twitter:description" content="게임, 애니, 피규어 굿즈를 검색하고 거래하세요.">
 
-  <link rel="canonical" href="https://otaku-market.example.com/">
-  <title>오타쿠 마켓 | 게임·애니·피규어 전문 거래</title>
+  <link rel="canonical" href="https://duckzil.example.com/">
+  <title>덕질 | 굿즈 거래의 모든 것</title>
   <link rel="stylesheet" href="index.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffb800">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 
 <body>
   <!-- Header -->
   <header class="header">
     <div class="header-content">
-      <div class="logo" onclick="location.reload()">오타쿠 마켓</div>
+      <div class="logo" onclick="location.reload()">🦆 덕질</div>
 
       <div class="search-bar">
         <input type="text" class="search-input" placeholder="게임, 피규어, 굿즈를 검색하세요..." id="searchInput">
@@ -82,10 +86,10 @@
       <div class="mobile-page-banner" id="mobilePageBanner">
         <div class="banner-content">
           <div class="banner-info">
-            <div class="banner-icon" id="bannerIcon">🏠</div>
+            <div class="banner-icon" id="bannerIcon">🦆</div>
             <div>
-              <h2 class="banner-title" id="bannerTitle">마켓 홈</h2>
-              <p class="banner-desc" id="bannerDesc">새로운 굿즈를 찾아보세요</p>
+              <h2 class="banner-title" id="bannerTitle">덕질 홈</h2>
+              <p class="banner-desc" id="bannerDesc">오늘도 즐거운 덕질 되세요!</p>
             </div>
           </div>
         </div>
@@ -93,8 +97,9 @@
 
       <!-- Hero Section -->
       <section class="hero" id="heroSection">
-        <h1 class="hero-title">오타쿠를 위한<br>특별한 거래 공간</h1>
-        <p class="hero-subtitle">게임, 애니메이션, 피규어 등 덕후 아이템 전문 중고 거래 플랫폼</p>
+        <div class="hero-mascot">🦆</div>
+        <h1 class="hero-title">당신의 성실한 덕질 파트너,<br>덕질(DuckZil)</h1>
+        <p class="hero-subtitle">귀여운 마스코트 오리(Duck)와 함께하는 고품격 굿즈 거래 플랫폼</p>
 
         <div class="stats">
           <div class="stat-item">
@@ -193,10 +198,10 @@
   <footer class="footer">
     <div class="footer-content">
       <div class="footer-section">
-        <div class="footer-title">오타쿠 마켓</div>
+        <div class="footer-title">🦆 덕질</div>
         <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
-          게임, 애니메이션, 피규어를 사랑하는<br>
-          모든 덕후들의 안전한 거래 공간
+          당신의 모든 덕질을 응원합니다.<br>
+          오리(Duck) 마스코트와 함께하는 안전한 거래
         </p>
       </div>
 
@@ -226,7 +231,7 @@
     </div>
 
     <div class="footer-bottom">
-      © 2026 오타쿠 마켓. All rights reserved. Made with love for otaku community
+      © 2026 덕질. All rights reserved. Made with 🦆 for the fan community
     </div>
   </footer>
 
@@ -239,7 +244,7 @@
       <div class="modal-body">
         <h2 style="font-family: 'Poppins', sans-serif; font-size: 28px; margin-bottom: 8px; text-align: center;">로그인
         </h2>
-        <p style="color: var(--text-secondary); text-align: center; margin-bottom: 32px;">오타쿠 마켓에 오신 것을 환영합니다!</p>
+        <p style="color: var(--text-secondary); text-align: center; margin-bottom: 32px;">덕질에 오신 것을 환영합니다!</p>
 
         <form id="loginForm" onsubmit="handleLogin(event)">
           <div class="form-group">
@@ -287,7 +292,7 @@
       <div class="modal-body">
         <h2 style="font-family: 'Poppins', sans-serif; font-size: 28px; margin-bottom: 8px; text-align: center;">회원가입
         </h2>
-        <p style="color: var(--text-secondary); text-align: center; margin-bottom: 32px;">오타쿠 마켓의 멤버가 되어보세요!</p>
+        <p style="color: var(--text-secondary); text-align: center; margin-bottom: 32px;">덕질의 멤버가 되어보세요!</p>
 
         <form id="signupForm" onsubmit="handleSignup(event)">
           <div class="form-group">
@@ -723,7 +728,7 @@
         <h2
           style="font-family: 'Poppins', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 8px; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
           이용방법 안내</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 32px;">오타쿠 마켓을 처음 이용하시나요? 활발한 덕질을 위한 가이드를 확인하세요!</p>
+        <p style="color: var(--text-secondary); margin-bottom: 32px;">덕질을 처음 이용하시나요? 활발한 덕질을 위한 가이드를 확인하세요!</p>
 
         <div style="display: flex; flex-direction: column; gap: 24px;">
           <div style="display: flex; gap: 20px;">
@@ -785,7 +790,7 @@
         <h2
           style="font-family: 'Poppins', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 8px; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
           수수료 안내</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 32px;">오타쿠 마켓의 투명한 수수료 정책을 확인하세요.</p>
+        <p style="color: var(--text-secondary); margin-bottom: 32px;">덕질의 투명한 수수료 정책을 확인하세요.</p>
 
         <div
           style="background: var(--bg-secondary); padding: 24px; border-radius: 20px; border: 1px solid var(--glass-border); text-align: center; margin-bottom: 24px;">
@@ -877,6 +882,15 @@
   <div id="notificationContainer"></div>
   <!-- Firebase & App Logic -->
   <script type="module" src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker Service Registered!', reg))
+          .catch(err => console.log('Service Worker Registration Failed', err));
+      });
+    }
+  </script>
 </body>
 
 </html>

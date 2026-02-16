@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   switchTab('home');
 
-  console.log('🚀 오타쿠 마켓 초기화 완료');
+  console.log('🚀 덕질(DuckZil) 초기화 완료');
 });
 
 // ===== 인증 (Authentication) =====
@@ -379,7 +379,7 @@ function renderCommunity() {
   if (communityPosts.length === 0) {
     grid.innerHTML = `<div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
         <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
-        <div style="font-size: 18px; font-weight: 600;">아직 게시글이 없습니다. 첫 글을 남겨보세요!</div>
+        <div style="font-size: 18px; font-weight: 600;">아직 게시글이 없습니다. 첫 덕질의 흔적을 남겨보세요!</div>
       </div>`;
     return;
   }
