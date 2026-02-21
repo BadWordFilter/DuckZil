@@ -32,6 +32,7 @@ let activeTab = 'home'; // 'home' or 'community'
 let currentChatId = null;
 let chatMessagesListener = null;
 let chatListListener = null;
+let globalChatListener = null;
 
 // ===== 초기화 =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   switchTab('home');
 
-  console.log('🚀 덕질(DuckZil) 초기화 완료');
+  console.log('🚀 DuckMarket 초기화 완료');
 });
 
 // ===== 인증 (Authentication) =====
@@ -62,11 +63,40 @@ function initializeAuth() {
         photoURL: user.photoURL
       };
       console.log('✅ 로그인됨:', currentUser.nickname);
+      setupGlobalChatListener();
     } else {
       currentUser = null;
       console.log('❌ 로그아웃됨');
+      if (globalChatListener) globalChatListener();
     }
     updateHeaderForUser();
+  });
+}
+
+function setupGlobalChatListener() {
+  if (globalChatListener) globalChatListener();
+
+  const chatsRef = collection(db, 'chats');
+  const q = query(chatsRef, where('participants', 'array-contains', currentUser.uid));
+
+  globalChatListener = onSnapshot(q, (snapshot) => {
+    let hasUnread = false;
+    const lastRead = JSON.parse(localStorage.getItem('lastReadChats') || '{}');
+
+    snapshot.forEach((doc) => {
+      const chat = doc.data();
+      const chatId = doc.id;
+      const updatedAt = chat.updatedAt?.seconds || 0;
+
+      if (updatedAt > (lastRead[chatId] || 0) && chat.lastMessageSender !== currentUser.uid) {
+        hasUnread = true;
+      }
+    });
+
+    const globalBadge = document.getElementById('globalChatBadge');
+    const mobileBadge = document.getElementById('mobileChatBadge');
+    if (globalBadge) globalBadge.style.display = hasUnread ? 'block' : 'none';
+    if (mobileBadge) mobileBadge.style.display = hasUnread ? 'block' : 'none';
   });
 }
 
@@ -85,6 +115,10 @@ function updateHeaderForUser() {
 
     headerActions.innerHTML = `
       ${themeBtn}
+      <button class="btn btn-secondary" onclick="showChatList()" id="headerChatBtn" style="position: relative;">
+        💬 채팅
+        <span id="globalChatBadge" class="badge-dot" style="display: none;"></span>
+      </button>
       ${communityBtn}
       <button class="btn btn-primary" onclick="showSellModal()">판매하기</button>
       <div class="user-profile" onclick="toggleDropdown()">
@@ -379,7 +413,7 @@ function renderCommunity() {
   if (communityPosts.length === 0) {
     grid.innerHTML = `<div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
         <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
-        <div style="font-size: 18px; font-weight: 600;">아직 게시글이 없습니다. 첫 덕질의 흔적을 남겨보세요!</div>
+        <div style="font-size: 18px; font-weight: 600;">아직 게시글이 없습니다. DuckMarket에 흔적을 남겨보세요!</div>
       </div>`;
     return;
   }
@@ -766,6 +800,30 @@ function toggleFavorite(productId) {
   localStorage.setItem('favorites', JSON.stringify(Array.from(favorites)));
   renderProducts(currentProducts);
 }
+
+// ── 카테고리 쇼케이스에서 마켓으로 이동 + 필터 적용 ──
+function filterAndGo(category) {
+  // 마켓 탭 활성화
+  switchTab('market');
+
+  // 카테고리 칩 동기화
+  const container = document.getElementById('categoryChips');
+  if (container) {
+    container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    const targetChip = container.querySelector(`[data-value="${category}"]`);
+    if (targetChip) targetChip.classList.add('active');
+  }
+
+  // 상단 내비 동기화
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(nav => {
+    nav.classList.toggle('active', nav.getAttribute('data-category') === category);
+  });
+
+  applyFilters();
+}
+
+window.filterAndGo = filterAndGo;
 
 function setupEventListeners() {
   window.onclick = function (event) {
@@ -1156,7 +1214,7 @@ function switchTab(tab) {
   if (tab === 'home') {
     if (homeSection) homeSection.style.display = 'block';
     if (headerCommunityBtn) {
-      headerCommunityBtn.innerHTML = '💬 커뮤니티';
+      headerCommunityBtn.innerHTML = '� 커뮤니티';
       headerCommunityBtn.setAttribute('onclick', "switchTab('community')");
     }
     navItems.forEach(nav => nav.classList.remove('active'));
@@ -1174,7 +1232,7 @@ function switchTab(tab) {
     if (marketplaceSection) marketplaceSection.style.display = 'block';
     if (nav) nav.style.display = 'block'; // Show categories on market
     if (headerCommunityBtn) {
-      headerCommunityBtn.innerHTML = '💬 커뮤니티';
+      headerCommunityBtn.innerHTML = '� 커뮤니티';
       headerCommunityBtn.setAttribute('onclick', "switchTab('community')");
     }
     // '전체' 탭 활성화 (마켓으로 올 때)
@@ -1322,15 +1380,35 @@ function openChat(chatId, withNickname, product) {
   if (chatWithUserEl) chatWithUserEl.textContent = withNickname;
   if (chatProductInfoEl) {
     chatProductInfoEl.innerHTML = `
-      <img src="${product.image}" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
-      <span>${product.title}</span>
+      <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="showProductDetail('${product.id}')">
+        <img src="${product.image}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 6px; border: 1px solid var(--glass-border);">
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.2;">${product.title}</span>
+          <span style="font-size: 11px; color: var(--primary-light);">${formatPrice(product.price)}원</span>
+        </div>
+      </div>
     `;
   }
+
+  // 읽음 처리
+  const lastRead = JSON.parse(localStorage.getItem('lastReadChats') || '{}');
+  lastRead[chatId] = Math.floor(Date.now() / 1000);
+  localStorage.setItem('lastReadChats', JSON.stringify(lastRead));
 
   closeModal('productModal');
   closeModal('chatListModal');
   const chatModal = document.getElementById('chatModal');
   if (chatModal) chatModal.classList.add('active');
+
+  const chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.value = '';
+    chatInput.focus();
+    // 엔터키 지원
+    chatInput.onkeypress = (e) => {
+      if (e.key === 'Enter') sendMessage();
+    };
+  }
 
   loadChatMessages(chatId);
 }
@@ -1347,6 +1425,11 @@ function loadChatMessages(chatId) {
       messages.push({ id: doc.id, ...doc.data() });
     });
     renderMessages(messages);
+
+    // 채팅창이 열려있는 동안 새 메시지가 오면 읽음 처리 업데이트
+    const lastRead = JSON.parse(localStorage.getItem('lastReadChats') || '{}');
+    lastRead[chatId] = Math.floor(Date.now() / 1000);
+    localStorage.setItem('lastReadChats', JSON.stringify(lastRead));
   });
 }
 
@@ -1378,21 +1461,29 @@ async function sendMessage() {
   if (!text || !currentChatId) return;
 
   try {
-    await addDoc(collection(db, 'chats', currentChatId, 'messages'), {
+    const messageData = {
       text: text,
       senderUID: currentUser.uid,
       senderNickname: currentUser.nickname,
       createdAt: new Date()
-    });
+    };
+
+    await addDoc(collection(db, 'chats', currentChatId, 'messages'), messageData);
 
     await updateDoc(doc(db, 'chats', currentChatId), {
       lastMessage: text,
+      lastMessageSender: currentUser.uid,
       updatedAt: new Date()
     });
 
     input.value = '';
+    // 보낸 즉시 내 읽음 시간 업데이트
+    const lastRead = JSON.parse(localStorage.getItem('lastReadChats') || '{}');
+    lastRead[currentChatId] = Math.floor(Date.now() / 1000);
+    localStorage.setItem('lastReadChats', JSON.stringify(lastRead));
   } catch (error) {
     console.error('메시지 전송 오류:', error);
+    showNotification('오류', '메시지 전송에 실패했습니다.', 'error');
   }
 }
 
@@ -1433,17 +1524,21 @@ function renderChatList(chats) {
 
   container.innerHTML = chats.map(chat => {
     const withNickname = chat.sellerUID === currentUser.uid ? chat.buyerNickname : chat.sellerNickname;
+    const lastRead = JSON.parse(localStorage.getItem('lastReadChats') || '{}');
+    const isUnread = (chat.updatedAt?.seconds || 0) > (lastRead[chat.id] || 0) && chat.lastMessageSender !== currentUser.uid;
+
     return `
-      <div class="chat-list-item" onclick="openChatFromList('${chat.id}', '${withNickname}', '${chat.productId}')" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.2s; border: 1px solid var(--glass-border); background: var(--surface-color); margin-bottom: 8px;">
+      <div class="chat-list-item" onclick="openChatFromList('${chat.id}', '${withNickname}', '${chat.productId}')" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.2s; border: 1px solid ${isUnread ? 'var(--primary)' : 'var(--glass-border)'}; background: var(--surface-color); margin-bottom: 8px; position: relative;">
         <img src="${chat.productImage}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;" onerror="this.src='placeholder.jpg'">
         <div style="flex: 1; overflow: hidden;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-            <span style="font-weight: 700; font-size: 15px;">${withNickname}</span>
+            <span style="font-weight: 700; font-size: 15px; color: ${isUnread ? 'var(--primary-light)' : 'var(--text-primary)'};">${withNickname}</span>
             <span style="font-size: 11px; color: var(--text-tertiary);">${chat.updatedAt?.seconds ? new Date(chat.updatedAt.seconds * 1000).toLocaleDateString('ko-KR') : ''}</span>
           </div>
-          <div style="font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${chat.lastMessage || '대화가 없습니다.'}</div>
-          <div style="font-size: 11px; color: var(--primary-light); margin-top: 4px; font-weight: 500;">${chat.productTitle}</div>
+          <div style="font-size: 13px; color: ${isUnread ? 'var(--text-primary)' : 'var(--text-secondary)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isUnread ? '600' : '400'};">${chat.lastMessage || '대화가 없습니다.'}</div>
+          <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; font-weight: 500;">${chat.productTitle}</div>
         </div>
+        ${isUnread ? '<span class="chat-unread-indicator"></span>' : ''}
       </div>
     `;
   }).join('');

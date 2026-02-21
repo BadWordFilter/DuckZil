@@ -1,6 +1,6 @@
 {
-  "name": "덕질 (DuckZil)",
-  "short_name": "덕질",
+  "name": "DuckMarket",
+  "short_name": "DuckMarket",
   "description": "귀여운 오리 마스코트와 함께하는 고품격 굿즈 거래 플랫폼",
   "start_url": "./index.html",
   "display": "standalone",
