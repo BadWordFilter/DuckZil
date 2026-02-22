@@ -302,7 +302,7 @@ async function handleSellProduct(event) {
 
   const previewContainer = document.getElementById('sellPreview');
   const uploadedImg = previewContainer.querySelector('img');
-  const image = uploadedImg ? uploadedImg.src : 'placeholder.jpg';
+  const image = uploadedImg ? uploadedImg.src : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23f2f4f6%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2220%22 fill=%22%238b95a1%22%3E?%3C/text%3E%3C/svg%3E';
 
   try {
     await addDoc(collection(db, 'products'), {
@@ -503,7 +503,7 @@ async function handleEditProduct(event) {
 
   const previewContainer = document.getElementById('editPreview');
   const uploadedImg = previewContainer.querySelector('img');
-  const image = uploadedImg ? uploadedImg.src : 'placeholder.jpg';
+  const image = uploadedImg ? uploadedImg.src : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23f2f4f6%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2220%22 fill=%22%238b95a1%22%3E?%3C/text%3E%3C/svg%3E';
 
   try {
     await updateDoc(doc(db, 'products', productId), {
@@ -600,7 +600,7 @@ function updateThemeIcon() {
 }
 
 // 기타 유틸리티
-function formatPrice(price) { return price.toLocaleString('ko-KR'); }
+function formatPrice(price) { return (price || 0).toLocaleString('ko-KR'); }
 function getCategoryEmoji(category) {
   const emojis = { game: '🎮', figure: '🗿', anime: '📺', manga: '📚', card: '🃏', plush: '🧸', merch: '✨' };
   return emojis[category] || '🎯';
@@ -1535,7 +1535,7 @@ async function showChatList() {
 
   const chatsRef = collection(db, 'chats');
   // participants에 현재 유저가 포함된 채팅방 가져오기
-  const q = query(chatsRef, where('participants', 'array-contains', currentUser.uid), orderBy('updatedAt', 'desc'));
+  const q = query(chatsRef, where('participants', 'array-contains', currentUser.uid));
 
   if (chatListListener) chatListListener();
 
@@ -1544,7 +1544,11 @@ async function showChatList() {
     snapshot.forEach((doc) => {
       chats.push({ id: doc.id, ...doc.data() });
     });
+    // 클라이언트 사이드에서 수동 정렬 (Firebase 복합 인덱스 오류 방지)
+    chats.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
     renderChatList(chats);
+  }, (error) => {
+    console.error('채팅 목록 스냅샷 오류:', error);
   });
 }
 
@@ -1565,7 +1569,7 @@ function renderChatList(chats) {
     return `
       <div class="chat-list-item" onclick="openChatFromList('${chat.id}', '${withNickname}', '${chat.productId}')" 
         style="display: flex; align-items: center; gap: 12px; padding: 12px; cursor: pointer; border: 1px solid ${isUnread ? 'var(--primary)' : 'var(--glass-border)'}; position: relative; margin-bottom: 8px;">
-        <img src="${chat.productImage}" style="width: 52px; height: 52px; border-radius: 12px; object-fit: cover;" onerror="this.src='placeholder.jpg'">
+        <img src="${chat.productImage}" style="width: 52px; height: 52px; border-radius: 12px; object-fit: cover;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23f2f4f6%22/%3E%3C/svg%3E'">
         <div style="flex: 1; overflow: hidden;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
             <span style="font-weight: 700; font-size: 15px; color: ${isUnread ? 'var(--primary)' : 'var(--text-primary)'};">${withNickname}</span>
@@ -1581,7 +1585,7 @@ function renderChatList(chats) {
 }
 
 function openChatFromList(chatId, withNickname, productId) {
-  const product = products.find(p => p.id === productId) || { title: '정보 없는 상품', image: 'placeholder.jpg' };
+  const product = products.find(p => p.id === productId) || { title: '정보 없는 상품', price: 0, image: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23f2f4f6%22/%3E%3C/svg%3E' };
   openChat(chatId, withNickname, product);
 }
 
