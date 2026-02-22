@@ -651,7 +651,7 @@ function renderProducts(productsToRender) {
   grid.innerHTML = productsToRender.map(product => `
     <div class="product-card" onclick="showProductDetail('${product.id}')">
       <div class="product-image">
-        <img src="${product.image}" alt="${product.title}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23${getColorForCategory(product.category)}%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2248%22 fill=%22white%22%3E${getCategoryEmoji(product.category)}%3C/text%3E%3C/svg%3E'">
+        <img src="${product.image}" alt="${product.title}" loading="lazy" decoding="async" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23${getColorForCategory(product.category)}%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2248%22 fill=%22white%22%3E${getCategoryEmoji(product.category)}%3C/text%3E%3C/svg%3E'">
         ${product.badge ? `<div class="product-badge badge-${product.badge}">${product.badge === 'new' ? 'NEW' : 'HOT'}</div>` : ''}
         <div class="product-favorite ${favorites.has(product.id) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavorite('${product.id}')">
           ${favorites.has(product.id) ? '❤️' : '🤍'}
