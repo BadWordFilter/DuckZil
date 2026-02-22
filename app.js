@@ -18,7 +18,10 @@ import {
   where,
   deleteDoc,
   updateProfile,
-  writeBatch
+  writeBatch,
+  messaging,
+  getToken,
+  onMessage
 } from "./firebase-config.js";
 
 // ===== 전역 변수 =====
@@ -64,6 +67,7 @@ function initializeAuth() {
       };
       console.log('✅ 로그인됨:', currentUser.nickname);
       setupGlobalChatListener();
+      requestNotificationPermission(); // 알림 권한 요청
     } else {
       currentUser = null;
       console.log('❌ 로그아웃됨');
@@ -1596,3 +1600,65 @@ style.textContent = `
   #chatMessages::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
 `;
 document.head.appendChild(style);
+
+// ===== 알림(Notification) 기능 =====
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    console.log('이 브라우저는 알림을 지원하지 않습니다.');
+    return;
+  }
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      console.log('🔔 알림 권한 허용됨');
+      saveMessagingToken();
+    } else {
+      console.warn('🔕 알림 권한 거부됨');
+    }
+  } catch (error) {
+    console.error('알림 권한 요청 중 오류:', error);
+  }
+}
+
+async function saveMessagingToken() {
+  try {
+    const token = await getToken(messaging, {
+      // 실제 Firebase Console에서 발급받은 VAPID Key를 적용하였습니다.
+      vapidKey: 'BE8vjmEQvuae3aZ9O7c1TGHr2KUaKqI_7jvTT2E1-AvKorOW6SREfOOfB9YKzoZA_Vf4ABEQA8zy3jQusr6_uTU'
+    });
+
+    if (token) {
+      console.log('🎫 FCM 토큰 획득:', token);
+
+      if (!currentUser) return;
+
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('uid', '==', currentUser.uid));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userDocId = querySnapshot.docs[0].id;
+        await updateDoc(doc(db, 'users', userDocId), {
+          fcmToken: token,
+          lastTokenUpdate: new Date()
+        });
+      }
+    }
+  } catch (error) {
+    console.error('FCM 토큰 저장 중 오류:', error);
+  }
+}
+
+// 포그라운드 메시지 수신 (앱이 켜져 있을 때)
+onMessage(messaging, (payload) => {
+  console.log('📨 포그라운드 메시지 수신:', payload);
+  const { title, body } = payload.notification;
+  if (typeof showNotification === 'function') {
+    showNotification(title, body, 'info');
+  } else {
+    alert(`${title}: ${body}`);
+  }
+});
+
+window.requestNotificationPermission = requestNotificationPermission;
