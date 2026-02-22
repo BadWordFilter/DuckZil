@@ -606,8 +606,16 @@ function getCategoryEmoji(category) {
   return emojis[category] || '🎯';
 }
 function getColorForCategory(category) {
-  const colors = { game: '8B5CF6', figure: '3B82F6', anime: 'EC4899', manga: '10B981', card: 'F59E0B', plush: 'EF4444', merch: '6366F1' };
-  return colors[category] || '8B5CF6';
+  const colors = {
+    game: '3182f6', // Toss Blue
+    figure: '4e5968', // Dark Gray
+    anime: '3182f6',
+    manga: '8b95a1', // Light Gray
+    card: '4e5968',
+    plush: '8b95a1',
+    merch: '3182f6'
+  };
+  return colors[category] || '3182f6';
 }
 
 function loadUserStats() {
